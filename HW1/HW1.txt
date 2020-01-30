@@ -1,0 +1,74 @@
+    HW1: Programming Exercise
+    (01:198:352) Internet Technology
+
+    Rutgers University - School of Arts and Sciences
+    Professor Nath Badri
+    Section 02
+
+    Assignment description:
+        This HW is to let your explore the socket programming interface in
+        Python. This exercise will serve as the foundation for the upcoming
+        programming projects. 
+
+        A sample working code is given to you in HW1.py.
+        The program consists of server code and client code written as two
+        separate threads. 
+
+        Understand the functionality implemented in the
+        program as it is in your environment. Make sure it executes
+        successfully. Then, for your HW submission, you need to do the
+        following:
+
+            1.
+                Separate server code and client code into two different
+                programs, server.py and client.py. 
+
+                Execute the server program first, and then the client program.
+                
+                You should still get the same set of print messages
+                as in the combined threaded code. (HW.py)
+
+            2.
+                In the given code, the client connects to the server
+                and the server just sends a message string back to the
+                client. 
+
+                Modify the program so that the client sends a word
+                to the server and then the server replaces each character in
+                the word with its ASCII value and sends the ASCII values as a
+                string back to the client. 
+
+                If the client sends "HELLO" to the
+                server, the client should receive "72_69_76_76_79".
+                
+                Your program should print the string sent by the client
+                and the corresponding string received by the client.
+
+            3.
+                Modify the client code so that the client can read a string
+                (each line is a word) from a test file (say, HW1test.txt)
+                and output the received string to a file (say, HW1out.txt).
+            
+            4.
+                Assume the input file will contain ONE word per line.
+
+            5.
+                WHAT TO SUBMIT:
+                    You should submit:
+                        [ 'client.py', 'server.py', 'HW1out.txt' ]
+                    You will be given a test fi,e (HW1test.txt) consisting
+                    of strings (one per line).
+
+                    Please create a zip to put these 4 files
+                        [ 'client.py', 'server.py', 'HW1test.txt', 'HW1out.txt' ]
+                    -- the zip file name should be 'hw1' + your_netID
+                            e.g. filename = 'hw1' + ga354       # yields 'hw1_ga354'
+
+                    Please put all 4 files in one zip file ONLY ('hw1_ga354.zip'),
+                    and make sure you follow the naming convention described above.
+                    Make sure your code is well documented.
+            
+            6.
+                Note:
+                    This exercise is homework and as such 
+                    should be completed and submitted individually.

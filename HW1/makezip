@@ -1,0 +1,4 @@
+#!/bin/bash
+
+zip -r ./hw_ga354.zip ./* -x makezip HW1.py HW1.txt HW1.pdf *.swp *.git
+
