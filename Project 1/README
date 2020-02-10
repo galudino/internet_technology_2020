@@ -1,0 +1,54 @@
+"""README
+    Project 1: Recursive DNS client and DNS servers (README)
+
+    Rutgers University
+        School of Arts and Sciences
+            (01:198:352) Internet Technology
+            Professor Nath Badri
+            Section 02
+
+    Assignment synopsis:
+        The goal of this project is to implement a simplified DNS system consisting of a client program and two server programs: RS (a simplified root DNS server) and TS (a simplified top-level DNS server). In project 0 (your first HW), you have already seen a client-server program with one socket each in the client and the server. In this project, you will extend that implementation to have two sockets in the client program. One socket will be used to communicate with RS and the other with TS.
+
+    Copyright © 2020 Gemuele Aludino
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files 
+    (the "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BY NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+    BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
+    THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
+0. Please write down the full names and NetIDs of both your team members.
+-------------------------------------------------------------------------------
+Gemuele (Gem) Aludino       ga354
+
+1. Briefly discuss how you implemented your recursive client functionality.
+-------------------------------------------------------------------------------
+(TODO)
+
+2. Are there known issues or functions that aren’t working currently in your attached code? If so, explain.
+-------------------------------------------------------------------------------
+(TODO)
+
+3. What problems did you face developing code for this project?
+-------------------------------------------------------------------------------
+(TODO)
+
+-------------------------------------------------------------------------------
+4. What did you learn by working on this project?
+-------------------------------------------------------------------------------
+(TODO)
