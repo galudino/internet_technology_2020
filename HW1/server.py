@@ -44,7 +44,7 @@ import sys
 import threading
 import time
 import random
-import socket as mysoc
+import socket
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright © 2020, Gemuele Aludino"
@@ -54,17 +54,98 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def server():
-    """Creates a server socket and listens for client connection requests
+PORTNO: int = 50007
+BUFFER_SIZE: int = 128
+UTF_8: str = 'utf-8'
+
+TEST_STR: str = 'HELLO'
+
+def strtoascii_str(src: str, delim: str) -> str:
+    """Takes a string and converts it into an ascii-equivalent string,
+    with each character delimited, save the last
 
         Args:
-            (none)
+            src: str
+                The source string
+            delim: char
+                The delimiter string
         Returns:
-            (none)
+            The resultant ascii string, e.g.
+                input 'HELLO' returns '72<delim>69<delim>76<delim>76<delim>79'
         Raises:
             (none)
     """
-    pass
+    dst: str = ''
+    
+    for c in src:
+        dst += str(ord(c))
+
+        if c is src[-1]:
+            break
+        else:
+            dst += delim
+
+    return dst    
+
+def server(portno: int) -> int:
+    """Creates a server socket and listens for client connection requests
+
+        Args:
+            portno: int
+                Port number to bind server socket to
+        Returns:
+            see sys.exit
+        Raises:
+            (none)
+    """
+    ssock: tuple
+    server_binding: tuple
+
+    hostname: str = ' '
+    localhost_ip: str = ' '
+    
+    msg_out: str = ' '
+    msg_in: str = ' '
+    buff_out: bytes = []
+    buff_in: bytes = []
+
+    try:
+        ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print('[S]: Server socket created\n')
+    except socket.error:
+        print('{} \n'.format('Server socket open error\n', socket.error))
+
+    server_binding = ('', portno)
+
+    ssock.bind(server_binding)
+    ssock.listen(1)
+
+    hostname = socket.gethostname()
+
+    print('[S]: Server host name is:', hostname)
+    
+    localhost_ip = socket.gethostbyname(hostname)
+    print('[S]: Server IP address is: {}\n'.format(localhost_ip))
+    
+    (csock, addr) = ssock.accept()
+    
+    print('[S]: Received connection request from a client at', addr, '\n')
+
+    msg_out = 'hello, from server to client'
+    print('[C]: Message sending to client: \'{}\''.format(msg_out))
+    csock.send(msg_out.encode(UTF_8))
+
+    msg_in = csock.recv(BUFFER_SIZE)
+
+    print('[C]: Message received from client: \'{}\''.format(msg_in.decode(UTF_8)))
+
+    msg_out = strtoascii_str(TEST_STR, '_')
+    print('[C]: Message sending to client: \'{}\''.format(msg_out))
+    csock.send(msg_out.encode(UTF_8))
+
+    print('')
+    ssock.close()
+    return exit()
 
 def main(argv: [str]) -> int:
     """Main function, where server function is called
@@ -76,7 +157,8 @@ def main(argv: [str]) -> int:
         Raises:
             (none)
     """
-    print('Hello, from client!')
+    server(PORTNO)
+    #print(strtoascii_str(TEST_STR, '_'))
     return EX_OK
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ from os import EX_OK
 
 import sys
 import threading
-import socket as mysoc
+import socket
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright © 2020, Gemuele Aludino"
@@ -52,17 +52,61 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def client():
+PORTNO: int = 50007
+BUFFER_SIZE: int = 128
+UTF_8: str = 'utf-8'
+
+TEST_STR: str = 'HELLO'
+
+def client(hostname: str, portno: int):
     """Creates a client socket and establishes a connection with a predefined server socket
         
         Args:
-            (none)
+            hostname: str
+                The desired hostname to connect to
+            portno: int
+                The desired port number to bind the client socket
         Returns:
-            (none)
+            see sys.exit
         Raises:
             (none)
     """
-    pass
+    csock: tuple
+    server_binding: tuple
+    status: int = -1
+
+    msg_out: str = ' '
+    msg_in: str = ' '
+    buff_out: bytes = []
+    buff_in: bytes = []
+    
+    try:
+        csock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print('[C]: Client socket created\n')
+    except socket.error:
+        print('{} \n'.format('Client socket open error', socket.error))
+    
+    server_binding = (hostname, portno)
+    status = csock.connect(server_binding)
+
+    msg_in = csock.recv(BUFFER_SIZE)
+
+    if msg_in:
+        print('[C]: Client socket connected to server\n')
+
+    print('[C]: Message received from server: \'{}\''.format(msg_in.decode('utf-8')))
+
+    msg_out = TEST_STR
+    print('[C]: Message sending to server: \'{}\''.format(msg_out))
+    csock.send(msg_out.encode(UTF_8))
+
+    msg_in = csock.recv(BUFFER_SIZE)
+    print('[C]: Message received from server: \'{}\''.format(msg_in.decode('utf-8')))
+
+    print('')
+    csock.close()
+    return exit()
+
 
 def main(argv: [str]) -> int:
     """Main function, where client function is called
@@ -74,7 +118,7 @@ def main(argv: [str]) -> int:
         Raises:
             (none)
     """
-    print('Hello, from client!')
+    client('localhost', PORTNO)
     return EX_OK
 
 if __name__ == '__main__':
