@@ -50,7 +50,7 @@ __date__ = "10 Feb 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 PORTNO: int = 50007
 BUFFER_SIZE: int = 128
@@ -121,7 +121,7 @@ def server(portno: int) -> int:
         Returns:
             see sys.exit
         Raises:
-            (none)
+            socket.error if server socket was not opened successfully
     """
     ssock: tuple
     server_binding: tuple
@@ -174,7 +174,36 @@ def main(argv: [str]) -> int:
         Raises:
             (none)
     """
-    server(PORTNO)
+    portno: int = -1
+
+    arg_length: int = len(argv)
+
+    usage_str_0: str = '\nUSAGE:\nfor port number 50007:\t python3 {}'.format(argv[0])
+
+    usage_str_1: str = 'for custom port number:\t python3 {} [port number]'.format(argv[0])
+
+    """
+    Default port number:    50007
+
+    To use defaul port number:
+    python3 server.py
+
+    To use custom port number:
+    python3 server.py [port number]
+        e.g.
+            python3 server.py 8345
+    """
+    if arg_length is 1:
+        portno = PORTNO
+    elif arg_length is 2:
+        portno = int(argv[1])
+    else:
+        print(usage_str_0)
+        print(usage_str_1)
+
+        exit()
+
+    server(portno)
     return EX_OK
 
 if __name__ == '__main__':

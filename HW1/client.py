@@ -49,7 +49,7 @@ __date__ = "10 Feb 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 PORTNO: int = 50007
 BUFFER_SIZE: int = 128
@@ -71,7 +71,7 @@ def file_to_list(input_file_str: str) -> [str]:
         Returns:
             A [str] of lines from file input_file_str
         Raises:
-            FileNotFoundError if input_file_str DNE
+            FileNotFoundError if input_file_str does not exist
     """
     output_list: [str] = []
     
@@ -155,7 +155,8 @@ def client(hostname: str, portno: int):
         Returns:
             see sys.exit
         Raises:
-            (none)
+            socket.error if client socket was not opened successfully
+            ConnectionRefusedError if client socket was not able to find server
     """
     csock: tuple
     server_binding: tuple
@@ -183,7 +184,9 @@ def client(hostname: str, portno: int):
         status = csock.connect(server_binding)
     except ConnectionRefusedError:
         print('[ERROR]: {} \n'.format('Client socket connection error.', ConnectionRefusedError))
-        print('(start the server first, and then the client.)\n')
+        print('Try the following:')
+        print('\tstart the server first, and then the client')
+        print('\tcheck the hostname and/or port number you have provided.\n\t\t(both must match the desired server)\n')
         exit()
 
     msg_in = csock.recv(BUFFER_SIZE)
@@ -203,7 +206,7 @@ def client(hostname: str, portno: int):
     print('')
     csock.close()
     return exit()
-
+    
 def main(argv: [str]) -> int:
     """Main function, where client function is called
 
@@ -214,7 +217,58 @@ def main(argv: [str]) -> int:
         Raises:
             (none)
     """
-    client(DEFAULT_HOST, PORTNO)
+    hostname: str = ' '
+    portno: int = -1
+
+    arg_length: int = len(argv)
+
+    usage_str_0: str = '\nUSAGE:\nfor hostname localhost and port number 50007:\t python3 {}'.format(argv[0])
+
+    usage_str_1: str = 'for custom hostname and port number 50007:\t python3 {} [hostname]'.format(argv[0])
+
+    usage_str_2: str = 'for custom hostname and port number:\t\t python3 {} [hostname] [port number]'.format(argv[0])
+
+    """
+    Default hostname:       localhost
+    Default port number:    50007
+
+    To use default hostname and port number:
+    python3 client.py
+
+    To use custom hostname and default port number:
+    python3 client.py [hostname]
+        e.g.
+            python3 client.py pwd.cs.rutgers.edu
+
+    To use both custom hostname and port number:
+    python3 client.py [hostname] [port number]
+        e.g.
+            python3 client.py pwd.cs.rutgers.edu 8345
+    """
+    if arg_length is 1:
+        hostname = DEFAULT_HOST
+        portno = PORTNO
+    elif arg_length is 2:
+        if argv[1] == '--help' or '-h':
+            print(usage_str_0)
+            print(usage_str_1)
+            print(usage_str_2, '\n')
+            
+            exit()
+        else: 
+            hostname = argv[1]
+            portno = PORTNO
+    elif arg_length is 3:
+        hostname = argv[1]
+        portno = int(argv[2])
+    else:
+        print(usage_str_0)
+        print(usage_str_1)
+        print(usage_str_2, '\n')
+
+        exit()
+
+    client(hostname, portno)
     return EX_OK
 
 if __name__ == '__main__':
