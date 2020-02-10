@@ -172,6 +172,8 @@ def client(hostname: str, portno: int):
     
     input_lines = file_to_list(DEFAULT_INPUT_FILE_STR)
 
+    host: str = ' '
+
     try:
         csock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print('[C]: Client socket created.\n')
@@ -249,15 +251,8 @@ def main(argv: [str]) -> int:
         hostname = DEFAULT_HOST
         portno = PORTNO
     elif arg_length is 2:
-        if argv[1] == '--help' or '-h':
-            print(usage_str_0)
-            print(usage_str_1)
-            print(usage_str_2, '\n')
-            
-            exit()
-        else: 
-            hostname = argv[1]
-            portno = PORTNO
+        hostname = argv[1]
+        portno = PORTNO
     elif arg_length is 3:
         hostname = argv[1]
         portno = int(argv[2])
