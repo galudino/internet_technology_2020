@@ -66,8 +66,17 @@ def main(argv):
         Raises:
             (none)
     """
+    ts_portno = -1
 
+    arg_length = len(argv)
+    usage_str = '\nUSAGE:\npython {} [ts_listen_port]\n'.format(argv[0])
 
+    if arg_length is 2:
+        ts_portno = int(argv[1])
+
+        print(ts_portno)
+    else:
+        print(usage_str)
 
     return EX_OK
 

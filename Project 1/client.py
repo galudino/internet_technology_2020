@@ -66,12 +66,28 @@ def main(argv):
         Raises:
             (none)
     """
-
+    """ERASE ME WHEN DONE
     type1 = flag.NS
     if type1 is flag.A:
         print('match')
     else:
         print('mismatch')
+    ERASE ME WHEN DONE"""
+    rs_portno = -1
+    ts_portno = -1
+    hostname_str = ' '
+
+    arg_length = len(argv)
+    usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\n'.format(argv[0])
+
+    if arg_length is 4:
+        rs_hostname = argv[1]
+        rs_portno = int(argv[2])
+        ts_portno = int(argv[3])
+
+        print(rs_hostname, rs_portno, ts_portno)
+    else:
+        print(usage_str)
 
     return EX_OK
 

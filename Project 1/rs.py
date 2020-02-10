@@ -66,6 +66,17 @@ def main(argv):
         Raises:
             (none)
     """
+    rs_portno = -1
+
+    arg_length = len(argv)
+    usage_str = '\nUSAGE:\npython {} [rs_listen_port]\n'.format(argv[0])
+
+    if arg_length is 2:
+        rs_portno = int(argv[1])
+        print('arg:', rs_portno)
+    else:
+        print(usage_str)
+
     return EX_OK
 
 if __name__ == '__main__':
