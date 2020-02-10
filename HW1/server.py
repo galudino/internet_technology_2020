@@ -41,8 +41,6 @@
 from os import EX_OK
 
 import sys
-import threading
-import time
 import random
 import socket
 
@@ -57,12 +55,12 @@ __status__ = "Debug"
 PORTNO: int = 50007
 BUFFER_SIZE: int = 128
 UTF_8: str = 'utf-8'
+CONFIRM_CONNECTED: str = '__CONNECTED__'
+END_OF_FILE: str = '__EOF__'
 
-TEST_STR: str = 'HELLO'
-
-def strtoascii_str(src: str, delim: str) -> str:
+def str_to_ascii_str(src: str, delim: str) -> str:
     """Takes a string and converts it into an ascii-equivalent string,
-    with each character delimited, save the last
+    with each character (save the last) suffixed with a delimiter
 
         Args:
             src: str
@@ -86,6 +84,33 @@ def strtoascii_str(src: str, delim: str) -> str:
             dst += delim
 
     return dst    
+
+def ascii_str_by_socket(sock: socket):
+    """Messages are received through sock and converted into ascii equivalent strings using str_to_ascii_str, and sent back via sock
+
+        Args:
+            sock: socket
+                The socket connection by which communication with the
+                client is implemented (AF_INET, SOCK_STREAM)
+        Returns:
+            (none)
+        Raises:
+            (none)
+    """
+    msg_out: str = ' '
+    msg_in: str = ' '
+
+    while True:
+        msg_in = sock.recv(BUFFER_SIZE)
+
+        if (msg_in.decode(UTF_8) == END_OF_FILE):
+            break        
+
+        print('[S]: Message received from client: \'{}\''.format(msg_in.decode(UTF_8)))    
+
+        msg_out = str_to_ascii_str(msg_in.decode(UTF_8), '_')
+        print('[S]: Message sending to client: \'{}\''.format(msg_out))
+        sock.send(msg_out.encode(UTF_8))
 
 def server(portno: int) -> int:
     """Creates a server socket and listens for client connection requests
@@ -111,9 +136,9 @@ def server(portno: int) -> int:
 
     try:
         ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print('[S]: Server socket created\n')
+        print('[S]: Server socket created.\n')
     except socket.error:
-        print('{} \n'.format('Server socket open error\n', socket.error))
+        print('[ERROR]: {} \n'.format('Server socket open error.\n', socket.error))
 
     server_binding = ('', portno)
 
@@ -121,27 +146,19 @@ def server(portno: int) -> int:
     ssock.listen(1)
 
     hostname = socket.gethostname()
-
     print('[S]: Server host name is:', hostname)
     
     localhost_ip = socket.gethostbyname(hostname)
     print('[S]: Server IP address is: {}\n'.format(localhost_ip))
     
     (csock, addr) = ssock.accept()
-    
     print('[S]: Received connection request from a client at', addr, '\n')
 
-    msg_out = 'hello, from server to client'
-    print('[C]: Message sending to client: \'{}\''.format(msg_out))
+    msg_out = CONFIRM_CONNECTED
     csock.send(msg_out.encode(UTF_8))
 
-    msg_in = csock.recv(BUFFER_SIZE)
-
-    print('[C]: Message received from client: \'{}\''.format(msg_in.decode(UTF_8)))
-
-    msg_out = strtoascii_str(TEST_STR, '_')
-    print('[C]: Message sending to client: \'{}\''.format(msg_out))
-    csock.send(msg_out.encode(UTF_8))
+    ascii_str_by_socket(csock)
+    print('\n[S]: Finished client interaction.')
 
     print('')
     ssock.close()
@@ -158,7 +175,6 @@ def main(argv: [str]) -> int:
             (none)
     """
     server(PORTNO)
-    #print(strtoascii_str(TEST_STR, '_'))
     return EX_OK
 
 if __name__ == '__main__':
@@ -166,4 +182,3 @@ if __name__ == '__main__':
         Program execution begins here.
     """
     retval = main(sys.argv)
-

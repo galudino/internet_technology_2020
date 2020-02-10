@@ -1,0 +1,9 @@
+input_lines: [str] = []
+with open(DEFAULT_INPUT_FILE_STR, 'r') as input_file:
+    input_lines = [line.rstrip() for line in input_file]
+
+output_lines: [str] = []
+with open(DEFAULT_OUTPUT_FILE_STR, 'a') as output_file:
+    for line in input_lines:
+        output_file.write(line)
+
