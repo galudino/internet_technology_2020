@@ -164,8 +164,6 @@ def client(hostname: str, portno: int):
 
     msg_out: str = ' '
     msg_in: str = ' '
-    buff_out: bytes = []
-    buff_in: bytes = []
 
     input_lines: [str] = []
     output_lines: [str] = []

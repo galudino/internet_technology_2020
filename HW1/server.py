@@ -130,9 +130,6 @@ def server(portno: int) -> int:
     localhost_ip: str = ' '
     
     msg_out: str = ' '
-    msg_in: str = ' '
-    buff_out: bytes = []
-    buff_in: bytes = []
 
     try:
         ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

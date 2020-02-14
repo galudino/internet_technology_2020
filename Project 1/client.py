@@ -33,6 +33,8 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+### Run order: ts.py, rs.py, client.py
+
 # remember to remove unused imports
 from os import EX_OK
 from enum import Enum

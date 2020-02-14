@@ -33,6 +33,8 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+### Run order: ts.py, rs.py, client.py
+
 # remember to remove unused imports
 from os import EX_OK
 from enum import Enum
@@ -73,7 +75,7 @@ def main(argv):
 
     if arg_length is 2:
         rs_portno = int(argv[1])
-        print('arg:', rs_portno)
+        print(rs_portno)
     else:
         print(usage_str)
 
