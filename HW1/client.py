@@ -39,8 +39,9 @@
 """
 
 from os import EX_OK
-import os
-import sys
+from os import path
+from sys import argv
+
 import socket
 
 __author__ = "Gemuele (Gem) Aludino"
@@ -51,15 +52,19 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Release"
 
-PORTNO: int = 50007
-BUFFER_SIZE: int = 128
 UTF_8: str = 'utf-8'
+
+DEFAULT_BUFFER_SIZE: int = 128
+DEFAULT_HOST: str = 'localhost'
+DEFAULT_PORTNO: int = 50007
+
+DEFAULT_INPUT_FILE_STR: str = 'HW1test.txt'
+DEFAULT_OUTPUT_FILE_STR: str = 'HW1out.txt'
+
 CONFIRM_CONNECTED: str = '__CONNECTED__'
 END_OF_FILE: str = '__EOF__'
 
-DEFAULT_HOST: str = 'localhost'
-DEFAULT_INPUT_FILE_STR: str = 'HW1test.txt'
-DEFAULT_OUTPUT_FILE_STR: str = 'HW1out.txt'
+MSG_ERR_CONN_REFUSED: str = 'Try the following:\n\tstart the serer first, and then the client\n\tcheck the hostname and/or port number you have provided.\n\t\t(both must match the desired server)\n'
 
 def file_to_list(input_file_str: str) -> [str]:
     """Creates a [str] using lines taken from a file named input_file_str;
@@ -99,7 +104,7 @@ def append_to_file_from_list(output_file_str: str, input_list: [str]):
         Raises:
             (none)
     """
-    if os.path.isfile(output_file_str):
+    if path.isfile(output_file_str):
         print('[NOTE]: Output file {} exists. Will append to file.'.format(output_file_str))
     else:
         print('[SUCCESS]: New file {} will be created for output.'.format(output_file_str))
@@ -136,7 +141,7 @@ def ascii_list_by_socket(sock: socket, lines: [str]) -> [str]:
         print('[C]: Message sending to server: \'{}\''.format(msg_out))
         sock.send(msg_out.encode(UTF_8))
 
-        msg_in = sock.recv(BUFFER_SIZE)
+        msg_in = sock.recv(DEFAULT_BUFFER_SIZE)
         print('[C]: Message received from server: \'{}\''.format(msg_in.decode('utf-8')))
 
         output.append(msg_in.decode(UTF_8))
@@ -144,7 +149,7 @@ def ascii_list_by_socket(sock: socket, lines: [str]) -> [str]:
     return output
 
 
-def client(hostname: str, portno: int):
+def client(hostname: str, portno: int, infile_str: str, outfile_str: str):
     """Creates a client socket and establishes a connection with a predefined server socket
         
         Args:
@@ -152,15 +157,18 @@ def client(hostname: str, portno: int):
                 The desired hostname to connect to
             portno: int
                 The desired port number to bind the client socket
+            infile_str: str
+                The desired name for the target input file
+            outfile_str: str
+                The desired name for the destination output file
         Returns:
-            see sys.exit
+            EX_OK (0)
         Raises:
             socket.error if client socket was not opened successfully
             ConnectionRefusedError if client socket was not able to find server
     """
     csock: tuple
     server_binding: tuple
-    status: int = -1
 
     msg_out: str = ' '
     msg_in: str = ' '
@@ -168,28 +176,24 @@ def client(hostname: str, portno: int):
     input_lines: [str] = []
     output_lines: [str] = []
     
-    input_lines = file_to_list(DEFAULT_INPUT_FILE_STR)
-
-    host: str = ' '
+    input_lines = file_to_list(infile_str)
 
     try:
         csock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print('[C]: Client socket created.\n')
     except socket.error:
-        print('[ERROR]: {} \n'.format('Client socket open error.', socket.error))
+        print('[ERROR]: {}\n'.format('Client socket open error.', socket.error))
     
     server_binding = (hostname, portno)
-    
+
     try:
-        status = csock.connect(server_binding)
+        csock.connect(server_binding)
     except ConnectionRefusedError:
         print('[ERROR]: {} \n'.format('Client socket connection error.', ConnectionRefusedError))
-        print('Try the following:')
-        print('\tstart the server first, and then the client')
-        print('\tcheck the hostname and/or port number you have provided.\n\t\t(both must match the desired server)\n')
+        print(MSG_ERR_CONN_REFUSED)
         exit()
 
-    msg_in = csock.recv(BUFFER_SIZE)
+    msg_in = csock.recv(DEFAULT_BUFFER_SIZE)
 
     if msg_in == CONFIRM_CONNECTED:
         print('[C]: Client socket connected to server.\n')
@@ -197,15 +201,15 @@ def client(hostname: str, portno: int):
     output_lines = ascii_list_by_socket(csock, input_lines)
     print('\n[C]: Finished server interaction.')
 
-    append_to_file_from_list(DEFAULT_OUTPUT_FILE_STR, output_lines)
-    print('[SUCCESS]: Output file \'{}\' written.'.format(DEFAULT_OUTPUT_FILE_STR))
+    append_to_file_from_list(outfile_str, output_lines)
+    print('[SUCCESS]: Output file \'{}\' written.'.format(outfile_str))
 
     msg_out = END_OF_FILE
     csock.send(msg_out.encode(UTF_8))
 
     print('')
     csock.close()
-    return exit()
+    return EX_OK
     
 def main(argv: [str]) -> int:
     """Main function, where client function is called
@@ -222,11 +226,13 @@ def main(argv: [str]) -> int:
 
     arg_length: int = len(argv)
 
-    usage_str_0: str = '\nUSAGE:\nfor hostname localhost and port number 50007:\t python3 {}'.format(argv[0])
+    usage_str_0: str = 'for hostname localhost and port number 50007:\t python3 {}'.format(argv[0])
 
     usage_str_1: str = 'for custom hostname and port number 50007:\t python3 {} [hostname]'.format(argv[0])
 
     usage_str_2: str = 'for custom hostname and port number:\t\t python3 {} [hostname] [port number]'.format(argv[0])
+
+    usage_str: str = '{}\n{}\n{}\n'.format(usage_str_0, usage_str_1, usage_str_2)
 
     """
     Default hostname:       localhost
@@ -247,25 +253,22 @@ def main(argv: [str]) -> int:
     """
     if arg_length is 1:
         hostname = DEFAULT_HOST
-        portno = PORTNO
+        portno = DEFAULT_PORTNO
     elif arg_length is 2:
         hostname = argv[1]
-        portno = PORTNO
+        portno = DEFAULT_PORTNO
     elif arg_length is 3:
         hostname = argv[1]
         portno = int(argv[2])
     else:
-        print(usage_str_0)
-        print(usage_str_1)
-        print(usage_str_2, '\n')
-
+        print('\nUSAGE:\n{}'.format(usage_str))
         exit()
 
-    client(hostname, portno)
+    client(hostname, portno, DEFAULT_INPUT_FILE_STR, DEFAULT_OUTPUT_FILE_STR)
     return EX_OK
 
 if __name__ == '__main__':
     """
         Program execution begins here.
     """
-    retval = main(sys.argv)
+    retval = main(argv)

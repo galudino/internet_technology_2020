@@ -39,9 +39,8 @@
 """
 
 from os import EX_OK
+from sys import argv
 
-import sys
-import random
 import socket
 
 __author__ = "Gemuele (Gem) Aludino"
@@ -52,9 +51,12 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Release"
 
-PORTNO: int = 50007
-BUFFER_SIZE: int = 128
 UTF_8: str = 'utf-8'
+
+DEFAULT_BUFFER_SIZE: int = 128
+
+DEFAULT_PORTNO: int = 50007
+
 CONFIRM_CONNECTED: str = '__CONNECTED__'
 END_OF_FILE: str = '__EOF__'
 
@@ -101,7 +103,7 @@ def ascii_str_by_socket(sock: socket):
     msg_in: str = ' '
 
     while True:
-        msg_in = sock.recv(BUFFER_SIZE)
+        msg_in = sock.recv(DEFAULT_BUFFER_SIZE)
 
         if (msg_in.decode(UTF_8) == END_OF_FILE):
             break        
@@ -128,6 +130,9 @@ def server(portno: int) -> int:
 
     hostname: str = ' '
     localhost_ip: str = ' '
+
+    csock: socket
+    addr: tuple
     
     msg_out: str = ' '
 
@@ -137,9 +142,11 @@ def server(portno: int) -> int:
     except socket.error:
         print('[ERROR]: {} \n'.format('Server socket open error.\n', socket.error))
 
-    server_binding = ('', portno)
+    ssock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+    server_binding = ('', portno)
     ssock.bind(server_binding)
+
     ssock.listen(1)
 
     hostname = socket.gethostname()
@@ -159,7 +166,7 @@ def server(portno: int) -> int:
 
     print('')
     ssock.close()
-    return exit()
+    return EX_OK
 
 def main(argv: [str]) -> int:
     """Main function, where server function is called
@@ -182,7 +189,7 @@ def main(argv: [str]) -> int:
     """
     Default port number:    50007
 
-    To use defaul port number:
+    To use default port number:
     python3 server.py
 
     To use custom port number:
@@ -191,7 +198,7 @@ def main(argv: [str]) -> int:
             python3 server.py 8345
     """
     if arg_length is 1:
-        portno = PORTNO
+        portno = DEFAULT_PORTNO
     elif arg_length is 2:
         portno = int(argv[1])
     else:
@@ -207,4 +214,4 @@ if __name__ == '__main__':
     """
         Program execution begins here.
     """
-    retval = main(sys.argv)
+    retval = main(argv)

@@ -1,0 +1,55 @@
+0.
+client provides:
+    rs_hostname rs_listen_port ts_listen_port
+        e.g. pwd.cs.rutgers.edu 8345 50007
+1.
+client connects to RS
+    sends rs_hostname (queried_hostname) to RS
+
+2.
+RS does a lookup in DNS_table:
+    key: rs_hostname (aka queried_hostname)
+    value: [ip_addr, flagtype]: namedtuple
+
+    if match:
+        RS sends back to client:
+            queried_hostname ip_addr A
+            (e.g. pwd.cs.rutgers.edu 1xx.1xx.x.x A)
+    else if no match:
+        RS sends back to client
+            ts_hostname - NS
+            (e.g. cs.rutgers.edu - NS)
+
+3.
+if client received string with flagtype portion 'A':
+    output entire string to stdout as is
+    (e.g. pwd.cs.rutgers.edu 1xx.1xx.x.x A)
+    done.
+
+else if client received string with flagtype portion 'NS':
+    use ts_hostname portion of received string
+    to determine ip_addr of machine running TS program
+    then connect to TS program using another socket
+    (e.g. will use cs.rutgers.edu to determine ip_addr of TS program)
+    not done.
+
+4. (if not done)
+client connects to TS
+    sends ts_hostname (portion of received string from RS) to TS.
+    (e.g. sends 'cs.rutgers.edu' to TS)
+
+    TS does a lookup in DNS_table:
+    key: ts_hostname (aka queried_hostname)
+    value: [ip_addr, flagtype]: namedtuple
+
+    if match:
+        TS sends back to client:
+            queried_hostname ip_addr A
+            (e.g. pwd.cs.rutgers.edu 1xx.1xx.x.x A)
+    else if no match:
+        TS sends back to client
+            queried_hostname - error: HOST NOT FOUND
+            (e.g. cs.rutgers.edu - NS)
+
+    client will then output string received from TS as is.
+    done.
