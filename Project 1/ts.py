@@ -37,10 +37,17 @@
 
 # remember to remove unused imports
 from os import EX_OK
+from sys import argv
 from enum import Enum
 
-import os
-import sys
+DEFAULT_INPUT_FILE_STR_TS = 'PROJI-DNSTS.txt'
+DEFAULT_PORTNO_TS = 50007
+HOST_NOT_FOUND_STR = 'Error:HOST NOT FOUND'
+
+from rs import flag
+from rs import addrflag
+from rs import file_to_list
+
 import socket
 import threading
 import time
@@ -53,10 +60,6 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
-
-class flag(Enum):
-    A = str
-    RS = str
 
 def main(argv):
     """Main function, where client function is called
@@ -85,4 +88,4 @@ if __name__ == '__main__':
     """
         Program execution begins here.
     """
-    retval = main(sys.argv)
+    retval = main(argv)

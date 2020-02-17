@@ -37,10 +37,16 @@
 
 # remember to remove unused imports
 from os import EX_OK
+from sys import argv
 from enum import Enum
 
-import os
-import sys
+from rs import flag
+from rs import addrflag
+
+#DEFAULT_INPUT_FILE_STR_HNS = 'PROJI-HNS.txt'
+DEFAULT_OUTPUT_FILE_STR_RESOLVED = 'RESOLVED.txt'
+from ts import HOST_NOT_FOUND_STR
+
 import socket
 import threading
 import time
@@ -53,10 +59,6 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
-
-class flag(Enum):
-    A = str
-    NS = str
 
 def main(argv):
     """Main function, where client function is called
@@ -91,10 +93,41 @@ def main(argv):
     else:
         print(usage_str)
 
+    """
+    client connects to RS first using rs_portno
+        sends rs_hostname to RS socket
+        waiting on string received...
+
+    if string received has 'NS' at last portion of string
+        match: no
+        ts_hostname = first portion of string received
+    else if string received has 'A' at last portion of string
+        match: yes
+    
+    if match:
+        print string received from RS as is
+        append string to DEFAULT_OUTPUT_FILE_STR_RESOLVED
+        done.
+    else:
+        client connects to TS using ts_portno
+            sends ts_hostname to TS socket
+            waiting on string received...
+
+    if string received has 'HOST NOT FOUND' at last portion of string:
+        match: no
+    else:
+        match: yes
+
+    print string received from TS as is
+    append string to DEFAULT_OUTPUT_FILE_STR_RESOLVED
+    done.
+    
+    """
+
     return EX_OK
 
 if __name__ == '__main__':
     """
         Program execution begins here.
     """
-    retval = main(sys.argv)
+    retval = main(argv)

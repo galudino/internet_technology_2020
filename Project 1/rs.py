@@ -37,10 +37,46 @@
 
 # remember to remove unused imports
 from os import EX_OK
+from sys import argv
 from enum import Enum
+from collections import namedtuple
 
-import os
-import sys
+class flag(Enum):
+    HOST_NOT_FOUND = 'Error:HOST NOT FOUND'
+    A = 'A'
+    NS = 'NS'
+
+addrflag = namedtuple("addrflag", ["ipaddr", "flagtype"])
+
+def file_to_list(input_file_str):
+    """Creates a [str] using lines taken from a file named input_file_str;
+    each element in the [str] will be suffixed with a linebreak
+
+        Args:
+            input_file_str: str
+                The name of the desired file to open
+        Returns:
+            A [str] of lines from file input_file_str
+        Raises:
+            FileNotFoundError if input_file_str does not exist
+    """
+    output_list = []
+    
+    try:
+        with open(input_file_str, 'r') as input_file:
+            output_list = [line.rstrip() for line in input_file]
+            print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
+    except FileNotFoundError:
+        print('[ERROR]: Input file \'{}\' not found.\n'.format(input_file_str))
+    
+    return output_list
+
+from ts import HOST_NOT_FOUND_STR
+
+DEFAULT_INPUT_FILE_STR_RS = 'PROJI-DNSRS.txt'
+DEFAULT_PORTNO_RS = 8345
+DEFAULT_TS_HOSTNAME = 'kill.cs.rutgers.edu'
+
 import socket
 import threading
 import time
@@ -54,9 +90,25 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-class flag(Enum):
-    A = str
-    RS = str
+class entry:
+    hostname = ''
+    af_pair = addrflag
+
+    def __init__(self, hostname, af_pair):
+        self.hostname = hostname
+        self.af_pair = af_pair
+
+    def __str__(self):
+        fmt = ''
+        ipaddr = self.af_pair.ipaddr
+        flagtype = self.af_pair.flagtype
+
+        if self.af_pair.flagtype is flag.HOST_NOT_FOUND:
+            fmt = '{} - {}'.format(self.hostname, HOST_NOT_FOUND_STR)
+        else:
+            fmt = '{} {} {}'.format(self.hostname, ipaddr, flagtype)
+
+        return fmt
 
 def main(argv):
     """Main function, where client function is called
@@ -79,10 +131,50 @@ def main(argv):
     else:
         print(usage_str)
 
+    
+    ### populate the local DNS_table with the provided input file.
+
+    ### convert input file into a list of strings
+    DNS_table = {}
+    linelist = file_to_list(DEFAULT_INPUT_FILE_STR_RS)
+
+    ### each field is separated by whitespace,
+    ### normal case (A or NS) will have 3 fields.
+    ### any other case (not 3 fields) will be treated as an error.
+    for line in linelist:
+        result = [x.strip() for x in line.split(' ')]
+
+        if len(result) != 3:
+            DNS_table[result[0]] = addrflag(result[1], HOST_NOT_FOUND_STR)
+        else:
+            DNS_table[result[0]] = addrflag(result[1], result[2])
+
+    ## example query from client
+    queried_hostname = 'www.ibm.com'
+    found = False
+
+    for key, value in DNS_table.iteritems():
+        if key == queried_hostname:
+            msg_out = '{} {} {}'.format(key, value.ipaddr, value.flagtype)
+            print(msg_out)
+            found = True
+            break
+
+    if not found:
+        ts_hostname = 'theTShostname'
+        msg_out = '{} {} {}'.format(ts_hostname, '-', flag.NS.value)
+        print(msg_out)
+
+        ## ts will do search with queried_hostname
+        ## if ts succeeds, do what rs would have done above
+        ## if ts fails,
+        ## msg_out = '{} {} {}'.format(queried_hostname, '-', HOST_NOT_FOUND_STR)
+        ## then send msg_out
+        
     return EX_OK
 
 if __name__ == '__main__':
     """
         Program execution begins here.
     """
-    retval = main(sys.argv)
+    retval = main(argv)
