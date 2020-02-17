@@ -42,6 +42,19 @@ from os import EX_OK
 from os import path
 from sys import argv
 
+DEFAULT_HOST: str = 'localhost'
+DEFAULT_PORTNO: int = 50007
+END_OF_FILE: str = '__EOF__'
+
+DEFAULT_INPUT_FILE_STR: str = 'HW1test.txt'
+DEFAULT_OUTPUT_FILE_STR: str = 'HW1out.txt'
+
+MSG_ERR_CONN_REFUSED: str = 'Try the following:\n\tstart the server first, and then the client\n\tcheck the hostname and/or port number you have provided.\n\t\t(both must match the desired server)\n'
+
+from server import CONFIRM_CONNECTED
+from server import DEFAULT_BUFFER_SIZE
+from server import UTF_8
+
 import socket
 
 __author__ = "Gemuele (Gem) Aludino"
@@ -51,20 +64,6 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Release"
-
-UTF_8: str = 'utf-8'
-
-DEFAULT_BUFFER_SIZE: int = 128
-DEFAULT_HOST: str = 'localhost'
-DEFAULT_PORTNO: int = 50007
-
-DEFAULT_INPUT_FILE_STR: str = 'HW1test.txt'
-DEFAULT_OUTPUT_FILE_STR: str = 'HW1out.txt'
-
-CONFIRM_CONNECTED: str = '__CONNECTED__'
-END_OF_FILE: str = '__EOF__'
-
-MSG_ERR_CONN_REFUSED: str = 'Try the following:\n\tstart the serer first, and then the client\n\tcheck the hostname and/or port number you have provided.\n\t\t(both must match the desired server)\n'
 
 def file_to_list(input_file_str: str) -> [str]:
     """Creates a [str] using lines taken from a file named input_file_str;

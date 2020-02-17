@@ -41,6 +41,13 @@
 from os import EX_OK
 from sys import argv
 
+UTF_8: str = 'utf-8'
+DEFAULT_BUFFER_SIZE: int = 128
+CONFIRM_CONNECTED: str = '__CONNECTED__'
+
+from client import DEFAULT_PORTNO
+from client import END_OF_FILE
+
 import socket
 
 __author__ = "Gemuele (Gem) Aludino"
@@ -50,15 +57,6 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Release"
-
-UTF_8: str = 'utf-8'
-
-DEFAULT_BUFFER_SIZE: int = 128
-
-DEFAULT_PORTNO: int = 50007
-
-CONFIRM_CONNECTED: str = '__CONNECTED__'
-END_OF_FILE: str = '__EOF__'
 
 def str_to_ascii_str(src: str, delim: str) -> str:
     """Takes a string and converts it into an ascii-equivalent string,
@@ -76,13 +74,13 @@ def str_to_ascii_str(src: str, delim: str) -> str:
             (none)
     """
     dst: str = ''
-    
-    for c in src:
+    src_len: int = len(src)
+
+    for i in range(src_len):
+        c: str = src[i]
         dst += str(ord(c))
 
-        if c is src[-1]:
-            break
-        else:
+        if i < src_len - 1:
             dst += delim
 
     return dst    
