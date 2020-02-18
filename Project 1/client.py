@@ -65,6 +65,14 @@ def main(argv):
 
         Args:
             Command line arguments (as per sys.argv)
+                argv[1] - rs_hostname
+                    desired hostname for RS program
+                argv[2] - rs_listen_port
+                    desired port number for RS program
+                argv[3] - ts_portno
+                    desired port number for TS program
+                argv[4] - output_file_name (OPTIONAL)
+                    desired name of output file
         Returns:
             Exit status, by default, 0 upon exit
         Raises:
@@ -79,17 +87,31 @@ def main(argv):
     ERASE ME WHEN DONE"""
     rs_portno = -1
     ts_portno = -1
-    hostname_str = ' '
+
+    queried_hostname = ' '
+    output_file_name = DEFAULT_OUTPUT_FILE_STR_RESOLVED
 
     arg_length = len(argv)
-    usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\n'.format(argv[0])
 
+    usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [output_file_name]\n'.format(argv[0], argv[0])
+
+    ## functionalize this - checkargs
     if arg_length is 4:
-        rs_hostname = argv[1]
+        queried_hostname = argv[1]
+
         rs_portno = int(argv[2])
         ts_portno = int(argv[3])
 
-        print(rs_hostname, rs_portno, ts_portno)
+        print(queried_hostname, rs_portno, ts_portno)
+    elif arg_length is 5:
+        queried_hostname = argv[1]
+
+        rs_portno = int(argv[2])
+        ts_portno = int(argv[3])
+
+        output_file_name = argv[4]
+
+        print(queried_hostname, rs_portno, ts_portno, output_file_name)
     else:
         print(usage_str)
 

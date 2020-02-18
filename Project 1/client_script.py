@@ -37,33 +37,72 @@ from client import main
 from sys import argv
 
 """
+    This script will automate the execution of client.py
+    by running client.py with as many input lines provided in
+    an input file, which is by default DEFAULT_INPUT_FILE_HOSTNAMES.
+
+    argv[1] - input_file
+        desired name for input file of hostnames
+    argv[2] - rs_portno
+        desired port number for RS program
+    argv[3] - ts_portno
+        desired port number for TS program
+    argv[4] - output_file
+        desired name for RS/TS server reply output
+
     Run this script using the following at the command prompt:
         $ python client_script.py 
             # for default input file name, DEFAULT_INPUT_FILE_HOSTNAMES
 
-        $ python client_script.py [filename]
+        $ python client_script.py [input_file]
             # for custom input filename
             # e.g. python client_script.py your_file.txt
+
+        $ python client_script.py [input_file] [rs_portno] [ts_portno] [output_file]
+            # for custom input filename, rs port number/ts port number
+            # e.g. python client_script.py your_input_file.txt 8345 50007 your_output_file.txt
 """
 
 DEFAULT_INPUT_FILE_HOSTNAMES = 'PROJI-HNS.txt'
 DEFAULT_RS_PORTNO = 8345
 DEFAULT_TS_PORTNO = 50007
 
-input_file_str = ' '
+input_file_str = '__NONE__'
+output_file_str = '__NONE__'
+rs_portno = DEFAULT_RS_PORTNO
+ts_portno = DEFAULT_TS_PORTNO
 
-len_argv = len(argv)
+arg_length = len(argv)
 
-if len_argv == 1:
+## functionalize this - checkargs
+if arg_length == 1:
     input_file_str = DEFAULT_INPUT_FILE_HOSTNAMES
-elif len_argv == 2:
+elif arg_length == 2:
     input_file_str = argv[1]
-else:
-    print('\nUSAGE:\n\t(for default input file name {})\n\tpython {}\n\n\t(for custom input file name)\n\tpython {} [filename]\n'.format(DEFAULT_INPUT_FILE_HOSTNAMES, argv[0], argv[0]))
-    exit()
+elif arg_length == 4:
+    input_file_str = argv[1]
 
-with open(input_file_str, 'r') as input_file:
-    input_lines = [line.rstrip() for line in input_file]
+    rs_portno = int(argv[2])
+    ts_portno = int(argv[3])
+elif arg_length == 5:
+    input_file_str = argv[1]
+
+    rs_portno = int(argv[2])
+    ts_portno = int(argv[3])
+
+    output_file_str = argv[4]
+else:
+    print('\nUSAGE:\npython {}\npython {} [input_file]\npython {} [input_file] [rs_portno] [ts_portno] [output_file]\n'.format(argv[0], argv[0], argv[0]))
+    exit()
+##
+
+## functionalize this - create cmdlineargs
+try:
+    with open(input_file_str, 'r') as input_file:
+        input_lines = [line.rstrip() for line in input_file]
+        print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
+except FileNotFoundError:
+    print('[ERROR]: Input file \'{}\' not found.\n{}'.format(input_file_str))
 
 args = []
 
@@ -71,12 +110,16 @@ for line in input_lines:
     a = []
     a.append('{}.py'.format(main.__name__))
     a.append(line)
-    a.append(str(DEFAULT_RS_PORTNO))
-    a.append(str(DEFAULT_TS_PORTNO))
+    a.append(str(rs_portno))
+    a.append(str(ts_portno))
+
+    if output_file_str != '__NONE__':
+        a.append(output_file_str)
 
     args.append(a)
 
 len_args = len(args)
+##
 
 for i in range(len_args):
     main(args[i])

@@ -66,8 +66,9 @@ def file_to_list(input_file_str):
         with open(input_file_str, 'r') as input_file:
             output_list = [line.rstrip() for line in input_file]
             print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
-    except FileNotFoundError:
+    except IOError:
         print('[ERROR]: Input file \'{}\' not found.\n'.format(input_file_str))
+        exit()
     
     return output_list
 
@@ -115,29 +116,63 @@ def main(argv):
 
         Args:
             Command line arguments (as per sys.argv)
+                argv[1] - rs_listen_port
+                    desired port number for RS program
+                argv[2] - custom_ts_hostname (OPTIONAL)
+                    desired hostname for TS program
+                argv[3] - input_file (OPTIONAL)
+                    desired name of input file of entries for RS program
         Returns:
             Exit status, by default, 0 upon exit
         Raises:
             (none)
     """
     rs_portno = -1
+    ts_hostname = '__NONE__'
+    input_file_str = '__NONE__'
 
     arg_length = len(argv)
-    usage_str = '\nUSAGE:\npython {} [rs_listen_port]\n'.format(argv[0])
 
+    usage_str = '\nUSAGE:\npython {} [rs_listen_port]\npython {} [rs_listen_port] [custom_ts_hostname]\npython {} [rs_listen_port] [custom_ts_hostname] [input_file]\n'.format(argv[0], argv[0], argv[0])
+
+    DNS_table = {}
+    linelist = []
+    queried_hostname = ''
+    found = False
+
+    ## functionalize this - checkargs
     if arg_length is 2:
         rs_portno = int(argv[1])
+        ts_hostname = DEFAULT_TS_HOSTNAME
+
+        input_file_str = DEFAULT_INPUT_FILE_STR_RS
+
         print(rs_portno)
+    elif arg_length is 3:
+        rs_portno = int(argv[1])
+        ts_hostname = argv[2]
+
+        input_file_str = DEFAULT_INPUT_FILE_STR_RS
+
+        print(rs_portno, ts_hostname)
+    elif arg_length is 4:
+        rs_portno = int(argv[1])
+        ts_hostname = argv[2]
+
+        input_file_str = argv[3]
+
+        print(rs_portno, ts_hostname, input_file_str)
     else:
         print(usage_str)
+        exit()
+    ##
 
-    
     ### populate the local DNS_table with the provided input file.
 
     ### convert input file into a list of strings
-    DNS_table = {}
-    linelist = file_to_list(DEFAULT_INPUT_FILE_STR_RS)
+    linelist = file_to_list(input_file_str)
 
+    ## functionalize this
     ### each field is separated by whitespace,
     ### normal case (A or NS) will have 3 fields.
     ### any other case (not 3 fields) will be treated as an error.
@@ -148,20 +183,23 @@ def main(argv):
             DNS_table[result[0]] = addrflag(result[1], HOST_NOT_FOUND_STR)
         else:
             DNS_table[result[0]] = addrflag(result[1], result[2])
+    ##
 
     ## example query from client
-    queried_hostname = 'www.ibm.com'
+    queried_hostname = 'www.ibm.com' ## get it from the client.
     found = False
 
+    ## functionalize this - table search
     for key, value in DNS_table.iteritems():
         if key == queried_hostname:
             msg_out = '{} {} {}'.format(key, value.ipaddr, value.flagtype)
-            print(msg_out)
+            print(msg_out) ## replace with send to client
+
             found = True
             break
+    ##
 
     if not found:
-        ts_hostname = 'theTShostname'
         msg_out = '{} {} {}'.format(ts_hostname, '-', flag.NS.value)
         print(msg_out)
 
