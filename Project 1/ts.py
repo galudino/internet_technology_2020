@@ -44,9 +44,12 @@ DEFAULT_INPUT_FILE_STR_TS = 'PROJI-DNSTS.txt'
 DEFAULT_PORTNO_TS = 50007
 HOST_NOT_FOUND_STR = 'Error:HOST NOT FOUND'
 
+from client import file_to_list
+
 from rs import flag
 from rs import addrflag
-from rs import file_to_list
+from rs import linelist_to_dns_table
+from rs import find_hostname
 
 import socket
 import threading
@@ -76,6 +79,7 @@ def main(argv):
             (none)
     """
     ts_portno = -1
+    ts_placeholder = ''
     input_file_str = '__NONE__'
 
     arg_length = len(argv)
@@ -87,7 +91,6 @@ def main(argv):
     queried_hostname = ''
     found = False
 
-    ## functionalize this - checkargs
     if arg_length is 2:
         ts_portno = int(argv[1])
         input_file_str = DEFAULT_INPUT_FILE_STR_TS
@@ -100,41 +103,33 @@ def main(argv):
         print(ts_portno, input_file_str)
     else:
         print(usage_str)
+        exit()
     ##
 
-    ### convert input file into a list of strings
     linelist = file_to_list(input_file_str)
+    (DNS_table, ts_placeholder) = linelist_to_dns_table(linelist)
 
-    ## functionalize this
-    ### each field is separated by whitespace,
-    ### normal case (A or NS) will have 3 fields.
-    ### any other case (not 3 fields) will be treated as an error.
-    for line in linelist:
-        result = [x.strip() for x in line.split(' ')]
-
-        if len(result) != 3:
-            DNS_table[result[0]] = addrflag(result[1], HOST_NOT_FOUND_STR)
-        else:
-            DNS_table[result[0]] = addrflag(result[1], result[2])
-    ##
+    ###
+    ### connect to client here
+    ###
 
     ## example query from client
     queried_hostname = 'www.ibm.com' ## get it from the client.
-    found = False
+    
+    found = find_hostname(DNS_table, queried_hostname)
 
-    ## functionalize this - table search
-    for key, value in DNS_table.iteritems():
-        if key == queried_hostname:
-            msg_out = '{} {} {}'.format(key, value.ipaddr, value.flagtype)
-            print(msg_out)
+    if found:
+        msg_out = '{} {} {}'.format(queried_hostname, DNS_table[queried_hostname][0], DNS_table[queried_hostname][1])
+        
+        print(msg_out) ## send to client
+    else:
+        msg_out = '{} - {}'.format(queried_hostname, HOST_NOT_FOUND_STR)
 
-            found = True
-            break
-    ##
+        print(msg_out) ## send to client
 
-    if not found:
-        msg_out = '{} {} {}'.format(queried_hostname, '-', HOST_NOT_FOUND_STR)
-        print(msg_out) ## replace with send to client
+    ###
+    ### disconnect from client here
+    ###
 
     return EX_OK
 

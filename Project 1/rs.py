@@ -48,35 +48,38 @@ class flag(Enum):
 
 addrflag = namedtuple("addrflag", ["ipaddr", "flagtype"])
 
-def file_to_list(input_file_str):
-    """Creates a [str] using lines taken from a file named input_file_str;
-    each element in the [str] will be suffixed with a linebreak
+def linelist_to_dns_table(linelist):
+    ts_hostname = '__NONE__'
+    DNS_table = {}
 
-        Args:
-            input_file_str: str
-                The name of the desired file to open
-        Returns:
-            A [str] of lines from file input_file_str
-        Raises:
-            FileNotFoundError if input_file_str does not exist
-    """
-    output_list = []
-    
-    try:
-        with open(input_file_str, 'r') as input_file:
-            output_list = [line.rstrip() for line in input_file]
-            print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
-    except IOError:
-        print('[ERROR]: Input file \'{}\' not found.\n'.format(input_file_str))
-        exit()
-    
-    return output_list
+    for line in linelist:
+        result = [word.strip() for word in line.split(' ')]
+        
+        if len(result) != 3:
+            DNS_table['ERROR'] = addrflag('MALFORMED', 'ENTRY')
+        else:
+            if result[2] == flag.NS.value and ts_hostname == '__NONE__':
+                ts_hostname = result[0]
+            elif result[2] == flag.A.value:
+                DNS_table[result[0]] = addrflag(result[1], result[2])
 
-from ts import HOST_NOT_FOUND_STR
+    return (DNS_table, ts_hostname)
+
+def find_hostname(DNS_table, queried_hostname):
+    found = False
+
+    for key, value in DNS_table.iteritems():
+        if key.lower() == queried_hostname:
+            found = True
+            break
+    
+    return found
 
 DEFAULT_INPUT_FILE_STR_RS = 'PROJI-DNSRS.txt'
 DEFAULT_PORTNO_RS = 8345
-DEFAULT_TS_HOSTNAME = 'kill.cs.rutgers.edu'
+
+from client import file_to_list
+from ts import HOST_NOT_FOUND_STR
 
 import socket
 import threading
@@ -91,25 +94,34 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-class entry:
-    hostname = ''
-    af_pair = addrflag
+def udp_receiver(portno):
+    sock = 0
+    ipaddr = 0
+    receiver_binding = ('', '')
 
-    def __init__(self, hostname, af_pair):
-        self.hostname = hostname
-        self.af_pair = af_pair
+    data = 0
+    addr = 0
 
-    def __str__(self):
-        fmt = ''
-        ipaddr = self.af_pair.ipaddr
-        flagtype = self.af_pair.flagtype
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print('[C]: Client UDP socket created.')
+    except socket.error:
+        print('[ERROR]: Socket open error - {}\n'.format(socket.error))
 
-        if self.af_pair.flagtype is flag.HOST_NOT_FOUND:
-            fmt = '{} - {}'.format(self.hostname, HOST_NOT_FOUND_STR)
-        else:
-            fmt = '{} {} {}'.format(self.hostname, ipaddr, flagtype)
+    ipaddr = socket.gethostbyname(socket.gethostname())
 
-        return fmt
+    try:
+        receiver_binding = (ipaddr, portno)
+        sock.bind(receiver_binding)
+        
+        print('[C]: Client UDP socket bound at {}, port number {}'.format(ipaddr, portno))
+    except socket.error:
+        print('[ERROR]: Socket bind error - {}\n'.format(socket.error))
+
+    (data, addr) = sock.recvfrom(1024)
+    print(addr, data.decode('utf-8'))
+
+    sock.close()
 
 def main(argv):
     """Main function, where client function is called
@@ -127,88 +139,68 @@ def main(argv):
         Raises:
             (none)
     """
-    rs_portno = -1
-    ts_hostname = '__NONE__'
-    input_file_str = '__NONE__'
-
     arg_length = len(argv)
 
-    usage_str = '\nUSAGE:\npython {} [rs_listen_port]\npython {} [rs_listen_port] [custom_ts_hostname]\npython {} [rs_listen_port] [custom_ts_hostname] [input_file]\n'.format(argv[0], argv[0], argv[0])
+    usage_str = '\nUSAGE:\npython {} [rs_listen_port]\npython {} [rs_listen_port] [input_file_name]\n'.format(argv[0], argv[0])
+
+    rs_portno = DEFAULT_PORTNO_RS
+
+    ts_hostname = ''
+
+    input_file_str = DEFAULT_INPUT_FILE_STR_RS
 
     DNS_table = {}
     linelist = []
     queried_hostname = ''
     found = False
 
-    ## functionalize this - checkargs
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
     if arg_length is 2:
         rs_portno = int(argv[1])
-        ts_hostname = DEFAULT_TS_HOSTNAME
 
         input_file_str = DEFAULT_INPUT_FILE_STR_RS
 
         print(rs_portno)
     elif arg_length is 3:
         rs_portno = int(argv[1])
-        ts_hostname = argv[2]
 
-        input_file_str = DEFAULT_INPUT_FILE_STR_RS
+        input_file_str = argv[2]
 
         print(rs_portno, ts_hostname)
-    elif arg_length is 4:
-        rs_portno = int(argv[1])
-        ts_hostname = argv[2]
-
-        input_file_str = argv[3]
-
-        print(rs_portno, ts_hostname, input_file_str)
     else:
         print(usage_str)
         exit()
-    ##
-
-    ### populate the local DNS_table with the provided input file.
-
-    ### convert input file into a list of strings
+    
     linelist = file_to_list(input_file_str)
+    (DNS_table, ts_hostname) = linelist_to_dns_table(linelist)
 
-    ## functionalize this
-    ### each field is separated by whitespace,
-    ### normal case (A or NS) will have 3 fields.
-    ### any other case (not 3 fields) will be treated as an error.
-    for line in linelist:
-        result = [x.strip() for x in line.split(' ')]
-
-        if len(result) != 3:
-            DNS_table[result[0]] = addrflag(result[1], HOST_NOT_FOUND_STR)
-        else:
-            DNS_table[result[0]] = addrflag(result[1], result[2])
-    ##
+    ###
+    ### connect to client here
+    ###
 
     ## example query from client
-    queried_hostname = 'www.ibm.com' ## get it from the client.
-    found = False
+    queried_hostname = 'WWW.IBM.COM'.lower() ## get it from the client.
+    
+    found = find_hostname(DNS_table, queried_hostname)
 
-    ## functionalize this - table search
-    for key, value in DNS_table.iteritems():
-        if key == queried_hostname:
-            msg_out = '{} {} {}'.format(key, value.ipaddr, value.flagtype)
-            print(msg_out) ## replace with send to client
-
-            found = True
-            break
-    ##
-
-    if not found:
-        msg_out = '{} {} {}'.format(ts_hostname, '-', flag.NS.value)
-        print(msg_out)
-
-        ## ts will do search with queried_hostname
-        ## if ts succeeds, do what rs would have done above
-        ## if ts fails,
-        ## msg_out = '{} {} {}'.format(queried_hostname, '-', HOST_NOT_FOUND_STR)
-        ## then send msg_out
+    if found:
+        msg_out = '{} {} {}'.format(queried_hostname, DNS_table[queried_hostname][0], DNS_table[queried_hostname][1])
         
+        print(msg_out) ## send to client
+    else:
+        msg_out = '{} - {}'.format(ts_hostname, flag.NS.value)
+
+        print(msg_out)  ## send to client
+    
+    ###
+    ### Disconnect from client here
+    ###
+
     return EX_OK
 
 if __name__ == '__main__':

@@ -40,11 +40,38 @@ from os import EX_OK
 from sys import argv
 from enum import Enum
 
+def file_to_list(input_file_str):
+    """Creates a [str] using lines taken from a file named input_file_str;
+    each element in the [str] will be suffixed with a linebreak
+
+        Args:
+            input_file_str: str
+                The name of the desired file to open
+        Returns:
+            A [str] of lines from file input_file_str
+        Raises:
+            IOError if input_file_str does not exist
+    """
+    output_list = []
+    
+    try:
+        with open(input_file_str, 'r') as input_file:
+            output_list = [line.rstrip() for line in input_file]
+            print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
+    except IOError:
+        print('[ERROR]: Input file \'{}\' not found.\n'.format(input_file_str))
+        exit()
+    
+    return output_list
+
+from rs import DEFAULT_PORTNO_RS
 from rs import flag
 from rs import addrflag
 
-#DEFAULT_INPUT_FILE_STR_HNS = 'PROJI-HNS.txt'
+DEFAULT_INPUT_FILE_STR_HNS = 'PROJI-HNS.txt'
 DEFAULT_OUTPUT_FILE_STR_RESOLVED = 'RESOLVED.txt'
+
+from ts import DEFAULT_PORTNO_TS
 from ts import HOST_NOT_FOUND_STR
 
 import socket
@@ -71,7 +98,9 @@ def main(argv):
                     desired port number for RS program
                 argv[3] - ts_portno
                     desired port number for TS program
-                argv[4] - output_file_name (OPTIONAL)
+                argv[4] - input_file_name (OPTIONAL)
+                    desired name of input file (queried_hostnames)
+                argv[5] - output_file_name (OPTIONAL)
                     desired name of output file
         Returns:
             Exit status, by default, 0 upon exit
@@ -85,35 +114,67 @@ def main(argv):
     else:
         print('mismatch')
     ERASE ME WHEN DONE"""
-    rs_portno = -1
-    ts_portno = -1
-
-    queried_hostname = ' '
-    output_file_name = DEFAULT_OUTPUT_FILE_STR_RESOLVED
-
     arg_length = len(argv)
 
-    usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [output_file_name]\n'.format(argv[0], argv[0])
+    usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name] [output_file_name]\n'.format(argv[0], argv[0], argv[0])
 
-    ## functionalize this - checkargs
+    rs_portno = DEFAULT_PORTNO_RS
+    ts_portno = DEFAULT_PORTNO_TS
+
+    rs_hostname = ''
+    ts_hostname = ''
+
+    input_file_str = DEFAULT_INPUT_FILE_STR_HNS
+    output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
+
+    hostname_list = []
+
     if arg_length is 4:
-        queried_hostname = argv[1]
+        rs_hostname = argv[1]
 
         rs_portno = int(argv[2])
         ts_portno = int(argv[3])
 
-        print(queried_hostname, rs_portno, ts_portno)
+        print(rs_hostname, rs_portno, ts_portno)
     elif arg_length is 5:
-        queried_hostname = argv[1]
+        rs_hostname = argv[1]
 
         rs_portno = int(argv[2])
         ts_portno = int(argv[3])
 
-        output_file_name = argv[4]
+        input_file_str = argv[4]
 
-        print(queried_hostname, rs_portno, ts_portno, output_file_name)
+        print(rs_hostname, rs_portno, ts_portno, input_file_str)
+    elif arg_length is 6:
+        rs_hostname = argv[1]
+
+        rs_portno = int(argv[2])
+        ts_portno = int(argv[3])
+
+        input_file_str = argv[4]
+        output_file_str = argv[5]
+
+        print(rs_hostname, rs_portno, ts_portno, input_file_str, output_file_str)
     else:
         print(usage_str)
+        exit()
+
+    hostname_list = file_to_list(input_file_str)
+
+    for elem in hostname_list:
+        rs_hostname = elem
+        print(rs_hostname) ## send to rs
+
+        # if rs_hostname not found then assign ts_hostname
+        # to portion of received string
+
+    ## Use this if string with NS is sent back.
+    ## check to see if ts_hostname was specified in RS's DNS_table
+    """
+    if ts_hostname == '__NONE__':
+        print('[ERROR]: RS server has not specified a hostname for the TS server.')
+        exit()
+    """
 
     """
     client connects to RS first using rs_portno
