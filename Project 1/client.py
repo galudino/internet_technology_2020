@@ -37,6 +37,7 @@
 
 # remember to remove unused imports
 from os import EX_OK
+from os import path
 from sys import argv
 from enum import Enum
 
@@ -87,6 +88,30 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
+def append_to_file_from_list(output_file_str, input_list):
+    """Appends str from input_list to a file named output_file_str, with each
+    appendage suffixed with a linebreak
+
+        Args:
+            output_file_str: str
+                The name of the desired output file to write to
+            
+            input_list: str
+                The name of a list of str
+        Returns:
+            (none)
+        Raises:
+            (none)
+    """
+    if path.isfile(output_file_str):
+        print('[NOTE]: Output file {} exists. Will append to file.'.format(output_file_str))
+    else:
+        print('[SUCCESS]: New file {} will be created for output.'.format(output_file_str))
+
+    with open(output_file_str, 'a') as output_file:
+        for line in input_list:
+            output_file.write(line + '\n')
+
 def main(argv):
     """Main function, where client function is called
 
@@ -121,13 +146,14 @@ def main(argv):
     rs_portno = DEFAULT_PORTNO_RS
     ts_portno = DEFAULT_PORTNO_TS
 
-    rs_hostname = ''
+    queried_hostname = ''
     ts_hostname = ''
 
     input_file_str = DEFAULT_INPUT_FILE_STR_HNS
     output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
 
     hostname_list = []
+    entries_resolved = []
 
     if arg_length is 4:
         rs_hostname = argv[1]
@@ -161,12 +187,32 @@ def main(argv):
 
     hostname_list = file_to_list(input_file_str)
 
-    for elem in hostname_list:
-        rs_hostname = elem
-        print(rs_hostname) ## send to rs
+    ###
+    ### Connect to RS here
+    ###
 
-        # if rs_hostname not found then assign ts_hostname
-        # to portion of received string
+
+    for elem in hostname_list:
+        queried_hostname = elem
+        print(queried_hostname) ## send to rs
+
+        ###
+        ### send rs_hostname to RS
+        ###
+        ###     if reply has 'A' flag
+        ###         entries_resolved.append(reply)
+        ###     else if reply has 'NS' flag
+        ###         ts_hostname = first split of reply
+        ###
+        ###         ###
+                    ### connect to TS here
+                    ###
+                    ###     send rs_hostname to TS
+                    ###         entries_resolved.append(reply)
+
+
+    append_to_file_from_list(output_file_str, entries_resolved)
+    print('[SUCCESS]: Output file \'{}\' written.'.format(output_file_str))
 
     ## Use this if string with NS is sent back.
     ## check to see if ts_hostname was specified in RS's DNS_table
@@ -176,37 +222,7 @@ def main(argv):
         exit()
     """
 
-    """
-    client connects to RS first using rs_portno
-        sends rs_hostname to RS socket
-        waiting on string received...
-
-    if string received has 'NS' at last portion of string
-        match: no
-        ts_hostname = first portion of string received
-    else if string received has 'A' at last portion of string
-        match: yes
-    
-    if match:
-        print string received from RS as is
-        append string to DEFAULT_OUTPUT_FILE_STR_RESOLVED
-        done.
-    else:
-        client connects to TS using ts_portno
-            sends ts_hostname to TS socket
-            waiting on string received...
-
-    if string received has 'HOST NOT FOUND' at last portion of string:
-        match: no
-    else:
-        match: yes
-
-    print string received from TS as is
-    append string to DEFAULT_OUTPUT_FILE_STR_RESOLVED
-    done.
-    
-    """
-
+    print('')
     return EX_OK
 
 if __name__ == '__main__':

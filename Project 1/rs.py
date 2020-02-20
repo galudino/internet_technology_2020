@@ -182,6 +182,32 @@ def main(argv):
     ###
     ### connect to client here
     ###
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print('[RS]: Server socket created.')
+    except socket.error:
+        print('[ERROR]: {}\n'.format('Server socket open error.\n', socket.error))
+        exit()
+    
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    binding = ('', rs_portno)
+    sock.connect(binding)
+
+    rs_hostname = socket.gethostname()
+    print('[RS]: Server hostname is: {}'.format(rs_hostname))
+
+    rs_ipaddr = socket.gethostbyname(rs_hostname)
+    print('[RS]: Server IP address is: {}\n'.format(rs_ipaddr))
+
+    try:
+        sock.connect(binding)
+        print('[RS]: Attempting to connect...')
+    except ConnectionRefusedError:
+        print('[ERROR]: {}\n'.format('Client socket connection error.', ConnectionRefusedError))
+        exit()
+
+    print('[RS]: Connected.\n')
 
     ## example query from client
     queried_hostname = 'WWW.IBM.COM'.lower() ## get it from the client.
@@ -200,6 +226,8 @@ def main(argv):
     ###
     ### Disconnect from client here
     ###
+    sock.close()
+    del sock
 
     return EX_OK
 

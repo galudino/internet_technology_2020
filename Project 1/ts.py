@@ -112,6 +112,32 @@ def main(argv):
     ###
     ### connect to client here
     ###
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print('[TS]: Server socket created.')
+    except socket.error:
+        print('[ERROR]: {}\n'.format('Server socket open error.\n', socket.error))
+        exit()
+    
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    binding = ('', ts_portno)
+    sock.connect(binding)
+
+    ts_hostname = socket.gethostname()
+    print('[TS]: Server hostname is: {}'.format(ts_hostname))
+
+    ts_ipaddr = socket.gethostbyname(ts_hostname)
+    print('[TS]: Server IP address is: {}\n'.format(ts_ipaddr))
+
+    try:
+        sock.connect(binding)
+        print('[TS]: Attempting to connect...')
+    except ConnectionRefusedError:
+        print('[ERROR]: {}\n'.format('Client socket connection error.', ConnectionRefusedError))
+        exit()
+
+    print('[TS]: Connected.\n')
 
     ## example query from client
     queried_hostname = 'www.ibm.com' ## get it from the client.
