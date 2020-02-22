@@ -35,45 +35,22 @@
 
 ### Run order: ts.py, rs.py, client.py
 
-# remember to remove unused imports
+from utils import file_to_list
+from utils import str_to_list
+from utils import append_to_file_from_list
+
+from dns_module import DNS_table
+
+from rs import DEFAULT_PORTNO_RS 
+from ts import DEFAULT_PORTNO_TS
+
 from os import EX_OK
 from os import path
 from sys import argv
 from enum import Enum
 
-def file_to_list(input_file_str):
-    """Creates a [str] using lines taken from a file named input_file_str;
-    each element in the [str] will be suffixed with a linebreak
-
-        Args:
-            input_file_str: str
-                The name of the desired file to open
-        Returns:
-            A [str] of lines from file input_file_str
-        Raises:
-            IOError if input_file_str does not exist
-    """
-    output_list = []
-    
-    try:
-        with open(input_file_str, 'r') as input_file:
-            output_list = [line.rstrip() for line in input_file]
-            print('[SUCCESS]: Input file \'{}\' opened.\n'.format(input_file_str))
-    except IOError:
-        print('[ERROR]: Input file \'{}\' not found.\n'.format(input_file_str))
-        exit()
-    
-    return output_list
-
-from rs import DEFAULT_PORTNO_RS
-from rs import flag
-from rs import addrflag
-
 DEFAULT_INPUT_FILE_STR_HNS = 'PROJI-HNS.txt'
 DEFAULT_OUTPUT_FILE_STR_RESOLVED = 'RESOLVED.txt'
-
-from ts import DEFAULT_PORTNO_TS
-from ts import HOST_NOT_FOUND_STR
 
 import socket
 import threading
@@ -87,30 +64,6 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
-
-def append_to_file_from_list(output_file_str, input_list):
-    """Appends str from input_list to a file named output_file_str, with each
-    appendage suffixed with a linebreak
-
-        Args:
-            output_file_str: str
-                The name of the desired output file to write to
-            
-            input_list: str
-                The name of a list of str
-        Returns:
-            (none)
-        Raises:
-            (none)
-    """
-    if path.isfile(output_file_str):
-        print('[NOTE]: Output file {} exists. Will append to file.'.format(output_file_str))
-    else:
-        print('[SUCCESS]: New file {} will be created for output.'.format(output_file_str))
-
-    with open(output_file_str, 'a') as output_file:
-        for line in input_list:
-            output_file.write(line + '\n')
 
 def main(argv):
     """Main function, where client function is called
@@ -153,15 +106,24 @@ def main(argv):
     output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
 
     hostname_list = []
-    entries_resolved = []
+    resolved = DNS_table()
 
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
+    cl_sock = 0
+    cl_binding = ('', '')
+    cl_hostname = ''
+    cl_ipaddr = ''
+    
     if arg_length is 4:
         rs_hostname = argv[1]
 
         rs_portno = int(argv[2])
         ts_portno = int(argv[3])
-
-        print(rs_hostname, rs_portno, ts_portno)
     elif arg_length is 5:
         rs_hostname = argv[1]
 
@@ -169,8 +131,6 @@ def main(argv):
         ts_portno = int(argv[3])
 
         input_file_str = argv[4]
-
-        print(rs_hostname, rs_portno, ts_portno, input_file_str)
     elif arg_length is 6:
         rs_hostname = argv[1]
 
@@ -179,8 +139,6 @@ def main(argv):
 
         input_file_str = argv[4]
         output_file_str = argv[5]
-
-        print(rs_hostname, rs_portno, ts_portno, input_file_str, output_file_str)
     else:
         print(usage_str)
         exit()
@@ -188,31 +146,52 @@ def main(argv):
     hostname_list = file_to_list(input_file_str)
 
     ###
-    ### Connect to RS here
+    ### connect to RS here
     ###
-
 
     for elem in hostname_list:
         queried_hostname = elem
         print(queried_hostname) ## send to rs
 
-        ###
-        ### send rs_hostname to RS
-        ###
-        ###     if reply has 'A' flag
-        ###         entries_resolved.append(reply)
-        ###     else if reply has 'NS' flag
-        ###         ts_hostname = first split of reply
-        ###
-        ###         ###
-                    ### connect to TS here
-                    ###
-                    ###     send rs_hostname to TS
-                    ###         entries_resolved.append(reply)
+        """
+        send queried_hostname to RS
+        reply = recv(...)
+        reply_elems = str_to_list(reply, ' ')
+    
+        if reply_elems[2] == DNS_table.flag.A.value:
+            resolved.append_from_str(reply)
+        elif reply_elems[2] == DNS_table.flag.NS.value:
+            ts_hostname = reply_elems[0]
 
+            ###
+            ### connect to TS here
+            ###
 
-    append_to_file_from_list(output_file_str, entries_resolved)
-    print('[SUCCESS]: Output file \'{}\' written.'.format(output_file_str))
+            if ts_hostname == '__NONE__':
+                print('[client]: ERROR - RS has not specified a hostname for the TS server.')
+                
+                exit()
+            else:
+                send queried_hostname to TS
+                reply = recv(...)
+                resolved.append_from_str(reply)
+        """
+
+    resolved.write_to_file(output_file_str)
+
+    """
+    table = DNS_table()
+    table.append_from_str('myhost 198.12.2.1 A')
+    table.ts_hostname = 'TS hostname'
+    print(table.ts_hostname)
+
+    table.append('hostname', DNS_table.addrflag('ipaddr', DNS_table.flag.A.value))
+    table.append_from_str('localhost 198.168.1.1 A')
+
+    table.remove('localhost')
+    table.clear()
+    table.write_to_file('newfile.txt')
+    """
 
     ## Use this if string with NS is sent back.
     ## check to see if ts_hostname was specified in RS's DNS_table

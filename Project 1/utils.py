@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
-"""ts.py
-    Project 1: Recursive DNS client and DNS servers (top-level DNS server)
+"""utils.py
+    Project 1: Recursive DNS client and DNS servers (miscellaneous utilities)
  
     Rutgers University
         School of Arts and Sciences
@@ -33,20 +33,7 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-### Run order: ts.py, rs.py, client.py
-
-from os import EX_OK
-from sys import argv
-
-from dns_module import DNS_table
-
-DEFAULT_INPUT_FILE_STR_TS = 'PROJI-DNSTS.txt'
-DEFAULT_PORTNO_TS = 50007
-
-import socket
-import threading
-import time
-import random
+from os import path
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -56,84 +43,58 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def main(argv):
-    """Main function, where client function is called
+def file_to_list(input_file_str):
+    """Creates a [str] using lines taken from a file named input_file_str;
+    each element in the [str] will be suffixed with a linebreak
 
         Args:
-            Command line arguments (as per sys.argv)
-                argv[1] - ts_listen_port
-                    desired port number for TS program
-                argv[2] - input_file (OPTIONAL)
-                    desired name of input file of entries for TS program
+            input_file_str: str
+                The name of the desired file to open
         Returns:
-            Exit status, by default, 0 upon exit
+            A [str] of lines from file input_file_str
+        Raises:
+            IOError if input_file_str does not exist
+    """
+    output_list = []
+    
+    try:
+        with open(input_file_str, 'r') as input_file:
+            output_list = [line.rstrip() for line in input_file]
+            print('[utils]: SUCCESS - Input file \'{}\' opened.\n'.format(input_file_str))
+
+            input_file.close()
+    except IOError:
+        print('[utils]: ERROR - Input file \'{}\' not found.\n'.format(input_file_str))
+        exit()
+    
+    return output_list
+
+def str_to_list(input_str, delim):
+    output_list = []
+    
+    output_list = [word.strip() for word in input_str.split(delim)]
+    return output_list
+
+def append_to_file_from_list(output_file_str, input_list):
+    """Appends str from input_list to a file named output_file_str, with each
+    appendage suffixed with a linebreak
+
+        Args:
+            output_file_str: str
+                The name of the desired output file to write to
+            
+            input_list: str
+                The name of a list of str
+        Returns:
+            (none)
         Raises:
             (none)
     """
-    arg_length = len(argv)
-
-    usage_str = '\nUSAGE:\npython {} [ts_listen_port]\npython {} [ts_listen_port] [input_file]\n'.format(argv[0], argv[0])
-
-    ts_portno = DEFAULT_PORTNO_TS
-
-    input_file_str = '__NONE__'
-
-    table = {}
-    queried_hostname = ''
-
-    msg_in = ''
-    msg_out = ''
-
-    data_in = ''
-    data_out = ''
-
-    ts_sock = 0
-    ts_binding = ('', '')
-    ts_hostname = ''
-    ts_ipaddr = ''
-
-    if arg_length is 2:
-        ts_portno = int(argv[1])
-        input_file_str = DEFAULT_INPUT_FILE_STR_TS
-    elif arg_length is 3:
-        ts_portno = int(argv[1])
-        input_file_str = argv[2]
+    if path.isfile(output_file_str):
+        print('[utils]: NOTE - Output file {} exists. Will append to file.'.format(output_file_str))
     else:
-        print(usage_str)
-        exit()
-    ##
+        print('[utils]: SUCCESS - New file {} will be created for output.'.format(output_file_str))
 
-    table = DNS_table()
-    table.append_from_file(input_file_str)
-
-    ###
-    ### set up ts server socket
-    ###
-
-    ###
-    ### connect to client
-    ###
-
-    ## example query from client
-    queried_hostname = 'WWW.IBM.COM' ## get it from the client.
-    
-    if table.has_hostname(queried_hostname):
-        msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
-
-        print(msg_out)
-    else:
-        msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
-
-        print(msg_out)
-
-    ###
-    ### disconnect from client here
-    ###
-
-    return EX_OK
-
-if __name__ == '__main__':
-    """
-        Program execution begins here.
-    """
-    retval = main(argv)
+    with open(output_file_str, 'a') as output_file:
+        for line in input_list:
+            output_file.write(line + '\n')

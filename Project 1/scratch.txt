@@ -53,3 +53,60 @@ client connects to TS
 
     client will then output string received from TS as is.
     done.
+
+
+## RS
+    try:
+        rs_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print('[RS]: Server socket created.')
+    except socket.error:
+        print('[ERROR]: {}\n'.format('Server socket open error.\n', socket.error))
+        exit()
+
+    rs_hostname = socket.gethostname()
+    print('[RS]: Server hostname is: {}'.format(rs_hostname))
+
+    rs_ipaddr = socket.gethostbyname(rs_hostname)
+    print('[RS]: Server IP address is: {}\n'.format(rs_ipaddr))
+
+    rs_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    rs_binding = ('', rs_portno)
+
+    try:
+        rs_sock.connect(rs_binding)
+        print('[RS]: Attempting to connect...')
+    except ConnectionRefusedError:
+        print('[ERROR]: {}\n'.format('Client socket connection error.', ConnectionRefusedError))
+        exit()
+
+    print('[RS]: Connected.\n')
+    """
+###
+
+### TS
+    try:
+        ts_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        print('[TS]: Server socket created.')
+    except socket.error:
+        print('[ERROR]: {}\n'.format('Server socket open error.\n', socket.error))
+        exit()
+
+    ts_hostname = socket.gethostname()
+    print('[TS]: Server hostname is: {}'.format(ts_hostname))
+
+    ts_ipaddr = socket.gethostbyname(ts_hostname)
+    print('[TS]: Server IP address is: {}\n'.format(ts_ipaddr))
+
+    ts_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    ts_binding = ('', ts_portno)
+
+    try:
+        ts_sock.connect(ts_binding)
+        print('[TS]: Attempting to connect...')
+    except ConnectionRefusedError:
+        print('[ERROR]: {}\n'.format('Client socket connection error.', ConnectionRefusedError))
+        exit()
+
+    print('[TS]: Connected.\n')
+
+###
