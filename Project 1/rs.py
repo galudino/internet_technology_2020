@@ -78,8 +78,6 @@ def main(argv):
 
     rs_portno = DEFAULT_PORTNO_RS
 
-    ts_hostname = ''
-
     input_file_str = '__NONE__'
 
     table = {}
@@ -130,7 +128,7 @@ def main(argv):
         print(msg_out)
     
     ###
-    ### Disconnect from client here
+    ### disconnect from client here
     ###
 
     return EX_OK

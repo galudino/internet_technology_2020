@@ -179,28 +179,6 @@ def main(argv):
 
     resolved.write_to_file(output_file_str)
 
-    """
-    table = DNS_table()
-    table.append_from_str('myhost 198.12.2.1 A')
-    table.ts_hostname = 'TS hostname'
-    print(table.ts_hostname)
-
-    table.append('hostname', DNS_table.addrflag('ipaddr', DNS_table.flag.A.value))
-    table.append_from_str('localhost 198.168.1.1 A')
-
-    table.remove('localhost')
-    table.clear()
-    table.write_to_file('newfile.txt')
-    """
-
-    ## Use this if string with NS is sent back.
-    ## check to see if ts_hostname was specified in RS's DNS_table
-    """
-    if ts_hostname == '__NONE__':
-        print('[ERROR]: RS server has not specified a hostname for the TS server.')
-        exit()
-    """
-
     print('')
     return EX_OK
 
