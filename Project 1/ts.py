@@ -92,6 +92,10 @@ def main(argv):
     ts_hostname = ''
     ts_ipaddr = ''
 
+    client_hostname = ''
+    client_portno = 0
+    client_binding = ('', '')
+
     if arg_length is 2:
         ts_portno = int(argv[1])
         input_file_str = DEFAULT_INPUT_FILE_STR_TS
@@ -101,34 +105,31 @@ def main(argv):
     else:
         print(usage_str)
         exit()
-    ##
 
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    ###
-    ### set up ts server socket
-    ###
+    ts_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    ts_binding = (ts_hostname, ts_portno)
+    ts_sock.bind(ts_binding)
 
-    ###
-    ### connect to client
-    ###
+    while True:
+        data_in, (client_hostname, client_portno) = ts_sock.recvfrom(128)
+        client_binding = (client_hostname, client_portno)
 
-    ## example query from client
-    queried_hostname = 'WWW.IBM.COM' ## get it from the client.
-    
-    if table.has_hostname(queried_hostname):
-        msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+        msg_in = data_in.decode('utf-8')
+        print('[TS]: incoming from {}: {}'.format(client_hostname, msg_in))
 
-        print(msg_out)
-    else:
-        msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
+        queried_hostname = msg_in
 
-        print(msg_out)
+        if table.has_hostname(queried_hostname):
+            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+        else:
+            msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
 
-    ###
-    ### disconnect from client here
-    ###
+        data_out = msg_out.decode('utf-8')
+        ts_sock.sendto(data_out, client_binding)
+        print('[TS]: outgoing to {}: {}\n'.format(client_hostname, msg_out))
 
     return EX_OK
 

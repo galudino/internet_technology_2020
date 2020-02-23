@@ -65,6 +65,64 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
+def query_servers(cl_sock, rs_binding, hostname_list, ts_portno):
+    rs_hostname = rs_binding[0]
+    rs_portno = rs_binding[1]
+
+    cl_sock_ts = 0
+    ts_hostname = ''
+    ts_binding = ('', '')
+    
+    resolved_list = []
+    queried_hostname = ''
+
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
+    reply_elems = []
+
+    for elem in hostname_list:
+        queried_hostname = elem
+
+        msg_out = queried_hostname
+        data_out = msg_out.encode('utf-8')
+        cl_sock.send(data_out)
+        print('[client]: outgoing to {}: {}'.format(rs_hostname, queried_hostname))
+
+        data_in = cl_sock.recv(128)
+        msg_in = data_in.decode('utf-8')
+        print('[client]: incoming from {}: {}'.format(rs_hostname, msg_in))
+
+        reply_elems = str_to_list(msg_in, ' ')
+
+        if reply_elems[2] == DNS_table.flag.A.value:
+            resolved_list.append(msg_in)
+        elif reply_elems[2] == DNS_table.flag.NS.value:
+            ts_hostname = reply_elems[0]
+
+            cl_sock_ts = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ts_binding = (ts_hostname, ts_portno)
+            cl_sock_ts.connect(ts_binding)
+
+            msg_out = queried_hostname
+            data_out = msg_out.encode('utf-8')
+            cl_sock_ts.send(data_out)
+            print('[client] outgoing to {}: {}'.format(ts_hostname, queried_hostname))
+
+            data_in = cl_sock_ts.recv(128)
+            msg_in = data_in.decode('utf-8')
+            print('[client]: incoming from {}: {}'.format(ts_hostname, msg_in))
+
+            resolved_list.append(msg_in)
+            cl_sock_ts.close()
+
+        print('')
+
+    return resolved_list
+
 def main(argv):
     """Main function, where client function is called
 
@@ -85,40 +143,23 @@ def main(argv):
         Raises:
             (none)
     """
-    """ERASE ME WHEN DONE
-    type1 = flag.NS
-    if type1 is flag.A:
-        print('match')
-    else:
-        print('mismatch')
-    ERASE ME WHEN DONE"""
     arg_length = len(argv)
 
     usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name] [output_file_name]\n'.format(argv[0], argv[0], argv[0])
 
-    rs_portno = DEFAULT_PORTNO_RS
-    ts_portno = DEFAULT_PORTNO_TS
-
-    queried_hostname = ''
-    ts_hostname = ''
+    cl_sock = 0
+    binding = ('', '')
+    
+    rs_hostname = ''
+    rs_portno = 0
+    rs_binding = ('', '')
 
     input_file_str = DEFAULT_INPUT_FILE_STR_HNS
     output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
 
     hostname_list = []
-    resolved = DNS_table()
+    resolved_list = []
 
-    msg_in = ''
-    msg_out = ''
-
-    data_in = ''
-    data_out = ''
-
-    cl_sock = 0
-    cl_binding = ('', '')
-    cl_hostname = ''
-    cl_ipaddr = ''
-    
     if arg_length is 4:
         rs_hostname = argv[1]
 
@@ -145,39 +186,12 @@ def main(argv):
 
     hostname_list = file_to_list(input_file_str)
 
-    ###
-    ### connect to RS here
-    ###
+    cl_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    rs_binding = (rs_hostname, rs_portno)
+    cl_sock.connect(rs_binding)
 
-    for elem in hostname_list:
-        queried_hostname = elem
-        print(queried_hostname) ## send to rs
-
-        """
-        send queried_hostname to RS
-        reply = recv(...)
-        reply_elems = str_to_list(reply, ' ')
-    
-        if reply_elems[2] == DNS_table.flag.A.value:
-            resolved.append_from_str(reply)
-        elif reply_elems[2] == DNS_table.flag.NS.value:
-            ts_hostname = reply_elems[0]
-
-            ###
-            ### connect to TS here
-            ###
-
-            if ts_hostname == '__NONE__':
-                print('[client]: ERROR - RS has not specified a hostname for the TS server.')
-                
-                exit()
-            else:
-                send queried_hostname to TS
-                reply = recv(...)
-                resolved.append_from_str(reply)
-        """
-
-    resolved.write_to_file(output_file_str)
+    resolved_list = query_servers(cl_sock, rs_binding, hostname_list, ts_portno)
+    append_to_file_from_list(output_file_str, resolved_list)
 
     print('')
     return EX_OK

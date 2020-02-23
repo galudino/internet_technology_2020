@@ -94,6 +94,10 @@ def main(argv):
     rs_hostname = ''
     rs_ipaddr = ''
 
+    client_hostname = ''
+    client_portno = 0
+    client_binding = ('', '')
+
     if arg_length is 2:
         rs_portno = int(argv[1])
         input_file_str = DEFAULT_INPUT_FILE_STR_RS
@@ -107,30 +111,28 @@ def main(argv):
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    ###
-    ### set up rs server socket
-    ###
+    rs_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    rs_binding = (rs_hostname, rs_portno)
+    rs_sock.bind(rs_binding)
 
-    ###
-    ### connect to client
-    ###
+    while True:
+        data_in, (client_hostname, client_portno) = rs_sock.recvfrom(128)
+        client_binding = (client_hostname, client_portno)
 
-    ## example query from client
-    queried_hostname = 'WWW.IBM.COM' ## get it from the client.
+        msg_in = data_in.decode('utf-8')
+        print('[RS]: incoming from {}: {}'.format(client_hostname, msg_in))
+
+        queried_hostname = msg_in
+
+        if table.has_hostname(queried_hostname):
+            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+        else:
+            msg_out = '{} - {}'.format(table.ts_hostname, DNS_table.flag.NS.value)
+
+        data_out = msg_out.decode('utf-8')
+        rs_sock.sendto(data_out, client_binding)
+        print('[RS]: outgoing to {}: {}\n'.format(client_hostname, msg_out))
     
-    if table.has_hostname(queried_hostname):
-        msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
-
-        print(msg_out)
-    else:
-        msg_out = '{} - {}'.format(table.ts_hostname, DNS_table.flag.NS.value)
-
-        print(msg_out)
-    
-    ###
-    ### disconnect from client here
-    ###
-
     return EX_OK
 
 if __name__ == '__main__':

@@ -77,7 +77,6 @@ class DNS_table:
         if not found:
             print('[dns_module]: Unable to find hostname \'{}\' in table.'.format(query))
 
-        print('')
         return found  
 
     def ipaddr(self, key):
