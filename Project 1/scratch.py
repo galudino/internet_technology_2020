@@ -8,7 +8,7 @@ import threading
 from threading import Thread
 import socket
 
-import socket
+import network
 
 class MyThread(Thread):
     def __init__(self, val):
@@ -45,9 +45,10 @@ def main(argv):
     t1.join()
     t2.join()
     """
-    
+    """
     run('T1', 4)
     run('T2', 8)
+    """
     
     return EX_OK
 

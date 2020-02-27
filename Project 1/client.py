@@ -65,9 +65,8 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def query_servers(cl_sock, rs_binding, hostname_list, ts_portno):
-    rs_hostname = rs_binding[0]
-    rs_portno = rs_binding[1]
+def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
+    cl_sock_rs = 0
 
     cl_sock_ts = 0
     ts_hostname = ''
@@ -82,42 +81,86 @@ def query_servers(cl_sock, rs_binding, hostname_list, ts_portno):
     data_in = ''
     data_out = ''
 
+    delimiter = ' '
     reply_elems = []
 
+    ts_not_found = False
+
+    try:
+        cl_sock_rs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except EnvironmentError:
+        print('[client]: ERROR - client socket open error.\n')
+        exit()
+
+    rs_binding = (rs_hostname, rs_portno)
+
+    try:
+        cl_sock_rs.connect(rs_binding)
+    except EnvironmentError:
+        print('[client]: ERROR - client socket connect error.\n')
+        exit()
+
     for elem in hostname_list:
+        ts_not_found = False
         queried_hostname = elem
 
         msg_out = queried_hostname
         data_out = msg_out.encode('utf-8')
-        cl_sock.send(data_out)
-        print('[client]: outgoing to {}: {}'.format(rs_hostname, queried_hostname))
+        cl_sock_rs.send(data_out)
+        print('[client]: outgoing to RS server \'{}\': \'{}\''.format(rs_hostname, queried_hostname))
+        
+        try:
+            data_in = cl_sock_rs.recv(128)
+        except EnvironmentError:
+            print('[client]: ERROR - RS server by hostname \'{}\' not available.'.format(rs_binding[0]))
+            return resolved_list
 
-        data_in = cl_sock.recv(128)
         msg_in = data_in.decode('utf-8')
-        print('[client]: incoming from {}: {}'.format(rs_hostname, msg_in))
+        print('[client]: incoming from RS server \'{}\': \'{}\''.format(rs_hostname, msg_in))
 
-        reply_elems = str_to_list(msg_in, ' ')
+        reply_elems = str_to_list(msg_in, delimiter)
 
-        if reply_elems[2] == DNS_table.flag.A.value:
-            resolved_list.append(msg_in)
-        elif reply_elems[2] == DNS_table.flag.NS.value:
-            ts_hostname = reply_elems[0]
+        if len(reply_elems) == 3:
+            if reply_elems[2] == DNS_table.flag.A.value:
+                resolved_list.append(msg_in)
+            elif reply_elems[2] == DNS_table.flag.NS.value:
+                ts_hostname = reply_elems[0]
 
-            cl_sock_ts = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            ts_binding = (ts_hostname, ts_portno)
-            cl_sock_ts.connect(ts_binding)
+                print('[client]: Redirecting query \'{}\' to TS server by hostname \'{}\'.'.format(queried_hostname, ts_hostname))
 
-            msg_out = queried_hostname
-            data_out = msg_out.encode('utf-8')
-            cl_sock_ts.send(data_out)
-            print('[client] outgoing to {}: {}'.format(ts_hostname, queried_hostname))
+                try:
+                    cl_sock_ts = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                except EnvironmentError:
+                    print('[client]: ERROR - client socket open error.\n')
+                    continue
 
-            data_in = cl_sock_ts.recv(128)
-            msg_in = data_in.decode('utf-8')
-            print('[client]: incoming from {}: {}'.format(ts_hostname, msg_in))
+                ts_binding = (ts_hostname, ts_portno)
 
-            resolved_list.append(msg_in)
-            cl_sock_ts.close()
+                try:
+                    cl_sock_ts.connect(ts_binding)
+                except EnvironmentError:
+                    print('[client]: ERROR - client socket connection error.\n')
+                    continue
+
+                msg_out = queried_hostname
+                data_out = msg_out.encode('utf-8')
+                cl_sock_ts.send(data_out)
+                print('[client] outgoing to TS server \'{}\': \'{}\''.format(ts_hostname, queried_hostname))
+
+                try:
+                    data_in = cl_sock_ts.recv(128)
+                except EnvironmentError:
+                    print('[client]: ERROR - TS server by hostname \'{}\' not available.'.format(rs_binding[0]))
+                    ts_not_found = True
+                
+                if ts_not_found == False:
+                    msg_in = data_in.decode('utf-8')
+                    print('[client]: incoming from TS server \'{}\': \'{}\''.format(ts_hostname, msg_in))
+
+                    resolved_list.append(msg_in)
+                    cl_sock_ts.close()
+            else:
+                print('[client]: message from \'{}\', \'{}\' is malformed.'.format(rs_hostname, msg_in))
 
         print('')
 
@@ -146,13 +189,11 @@ def main(argv):
     arg_length = len(argv)
 
     usage_str = '\nUSAGE:\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name]\npython {} [rs_hostname] [rs_listen_port] [ts_listen_port] [input_file_name] [output_file_name]\n'.format(argv[0], argv[0], argv[0])
-
-    cl_sock = 0
-    binding = ('', '')
     
     rs_hostname = ''
     rs_portno = 0
-    rs_binding = ('', '')
+
+    ts_portno = 0
 
     input_file_str = DEFAULT_INPUT_FILE_STR_HNS
     output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
@@ -186,12 +227,14 @@ def main(argv):
 
     hostname_list = file_to_list(input_file_str)
 
-    cl_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    rs_binding = (rs_hostname, rs_portno)
-    cl_sock.connect(rs_binding)
+    if len(hostname_list) > 0:
+        resolved_list = query_servers(rs_hostname, 
+                                      rs_portno, 
+                                      hostname_list, 
+                                      ts_portno)
 
-    resolved_list = query_servers(cl_sock, rs_binding, hostname_list, ts_portno)
-    append_to_file_from_list(output_file_str, resolved_list)
+    if len(resolved_list) > 0:
+        append_to_file_from_list(output_file_str, resolved_list)
 
     print('')
     return EX_OK

@@ -38,17 +38,108 @@ Gemuele (Gem) Aludino       ga354
 
 1. Briefly discuss how you implemented your recursive client functionality.
 -------------------------------------------------------------------------------
-(TODO)
+I started by carring over some functions from HW 1 that could be reused
+(in utils.py):
+    file_to_list
+        opens a file and returns a list of strings
+        with each element being a line from the file
+    str_to_list
+        takes an input string and returns a list of substrings
+        with each element being a substring delimited by a parameter string
+        (in this case, the delimiter would be whitespace, or ' ')
+    append_to_file_from_list
+        Takes a list and writes each element from that list to a file
+            If the file does not exist, it will be created first
+            Then contents of list will be appended to the file
+
+Then I wrote if/else blocks for client.py, rs.py, and ts.py
+to check for proper command line argument count when
+these scripts are invoked in the terminal.
+
+If the argument count is incorrect for a given script,
+a usage string will print to STDOUT demonstrating what
+the proper use cases are for each .py file.
+
+In client.py,
+    a list named hostname_list will be used to cache the hostnames
+    that will be queried and sent to the RS/TS servers.
+    The function file_to_list is used here for this purpose.
+
+    If the hostname_list is not empty,
+        we go the query_servers routine, and send in the following:
+            rs_hostname - the hostname for the desired RS server
+            rs_portno   - the port number for the desired RS server
+            hostname_list - list of hostnames to query (from the input file)
+            ts_portno   - the port number for the desired TS server (if needed)
+        The query_servers routine will return a list named resolved_list,
+        which consists of the strings sent back from RS or TS that will be
+        written to the final output file.
+
+        A client socket connection to RS will be opened,
+        and for each query from the hostname_list:
+            take the received string and use str_to_list to parse it
+            into a list of strings. a well-formed received string
+            should generate a list of size 3.
+
+            if the received string from RS has the 'A' flag (last element):
+                append the string to resolved_list
+            else if the received string for RS has the 'NS' flag (last element):
+                open a new client socket connection to TS using
+                the first element in the list returned from str_to_list
+
+                append the string received by TS to the resolved_list.
+
+    Finally, if the resolved_list is not empty,
+        we append the contents of resolved_list to a file named output_file_str.
+
+In rs.py/ts.py (they work just about the same):
+    - Check the argument count
+    - Populate the table (type DNS_table) from input_file_str
+    - Open a listening server socket, bind it with ('', rs_portno)
+
+    Then, in an infinite while loop:
+        receive data from a prospective client,
+        along with their client_binding (hostname, portno)
+
+        receive the queried_hostname from the client
+
+        search the DNS_table with key queried_hostname
+            if the table has the hostname:
+                send back the { key : value } pair in string form from the table
+            else:
+                for RS, send back to client
+                    'queried_hostname - NS'
+                for TS, send back to client
+                    'queried_hostname - Error:HOST NOT FOUND'
+
+dns_module.py 
+    contains an object called DNS_table,
+    which is an ADT that encapsulates a dictionary and the
+    hostname for the TS server.
+
+    The DNS_table type is populated with entries from
+    an input file, using a append_from_file method.
+
+    The key will be the hostname parsed,
+    and the value is an inner namedtuple type called addrflag --
+    which consists of the ipaddress as the first element of the tuple,
+    and a flagtype, which is an inner class of type flag(Enum).
 
 2. Are there known issues or functions that aren’t working currently in your attached code? If so, explain.
 -------------------------------------------------------------------------------
-(TODO)
+No issues thus far, but more testing is needed to confirm any issues.
+I have a feeling it needs to be more robust so that it can survive
+certain test cases.
 
 3. What problems did you face developing code for this project?
 -------------------------------------------------------------------------------
-(TODO)
+Only problems I had was learning how to do certain things in Python,
+as I am learning the language for the first time. I like it.
 
 -------------------------------------------------------------------------------
 4. What did you learn by working on this project?
 -------------------------------------------------------------------------------
-(TODO)
+In Systems Programming (CS214), we did work on TCP Sockets for our last project(multi-threaded client/server mailbox program) - so there weren't any new
+concepts for me here. I'd say working with UDP sockets are what's new for me, and of course doing everything in Python. 
+
+However, the socket interface is a direct transliteration of the C socket API, so it's not too unfamiliar.

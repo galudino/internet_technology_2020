@@ -65,7 +65,6 @@ def file_to_list(input_file_str):
             input_file.close()
     except IOError:
         print('[utils]: ERROR - Input file \'{}\' not found.\n'.format(input_file_str))
-        exit()
     
     return output_list
 

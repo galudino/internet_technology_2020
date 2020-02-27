@@ -96,16 +96,18 @@ class DNS_table:
 
             if len(result) != 3:
                 self.__table['ERROR'] = self.addrflag('MALFORMED', 'ENTRY')
+                
+                print('[dns_module]: Input \'{}\' from file \'{}\' is malformed. Unable to add entry to table.\n'.format(line, input_file_str))
             else:
                 if result[2] == DNS_table.flag.NS.value and self.__ts_hostname == '__NONE__':
                     self.__ts_hostname = result[0]
 
-                    print('[dns_module]: ts_hostname assigned as {}.'.format(result[0]))
+                    print('[dns_module]: ts_hostname assigned as \'{}\'.'.format(result[0]))
 
                 elif result[2] == DNS_table.flag.A.value:
                     self.__table[result[0]] = self.addrflag(result[1], result[2])
 
-                    print('[dns_module]: {} : ({}, {}) added to table from file \'{}\'.'.format(result[0], result[1], result[2], input_file_str))
+                    print('[dns_module]: \'{} : ({}, {})\' added to table from file \'{}\'.'.format(result[0], result[1], result[2], input_file_str))
         
         print('')       
 
@@ -118,11 +120,11 @@ class DNS_table:
             if result[2] == DNS_table.flag.NS.value and self.__ts_hostname == '__NONE__':
                 self.__ts_hostname = result[0]
 
-                print('[dns_module]: ts_hostname assigned as {}.'.format(result[0]))
+                print('[dns_module]: ts_hostname assigned as \'{}\'.'.format(result[0]))
             elif result[2] == DNS_table.flag.A.value:
                 self.__table[result[0]] = self.addrflag(result[1], result[2])
 
-                print('[dns_module]: {} : ({}, {}) added to table from string \'{}\'.'.format(result[0], result[1], result[2], input_str))
+                print('[dns_module]: \'{} : ({}, {})\' added to table from string \'{}\'.'.format(result[0], result[1], result[2], input_str))
 
     def remove(self, hostname):
         self.__table.pop(hostname.lower())
@@ -139,17 +141,17 @@ class DNS_table:
             return
 
         if path.isfile(output_file_str):
-            print('[dns_module]: Output file {} exists; will append table contents.'.format(output_file_str))
+            print('[dns_module]: Output file \'{}\' exists; will append table contents.'.format(output_file_str))
         else:
-            print('[dns_module]: New file {} will be created for output.'.format(output_file_str))
+            print('[dns_module]: New file \'{}\' will be created for output.'.format(output_file_str))
         
         with open(output_file_str, 'a') as output_file:
             for key, value in self.__table.iteritems():
                 outstr = '{} {} {}'.format(key, value[0], value[1])
                 output_file.write('{}\n'.format(outstr))
 
-                print('[dns_module]: writing \'{}\' to {}.'.format(outstr, output_file_str))
+                print('[dns_module]: writing \'{}\' to \'{}\'.'.format(outstr, output_file_str))
         
             output_file.close()
 
-        print('[dns_module]: SUCCESS - output file {} with DNS_table contents created.'.format(output_file_str))
+        print('[dns_module]: SUCCESS - output file \'{}\' with DNS_table contents created.'.format(output_file_str))

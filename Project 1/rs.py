@@ -120,7 +120,7 @@ def main(argv):
         client_binding = (client_hostname, client_portno)
 
         msg_in = data_in.decode('utf-8')
-        print('[RS]: incoming from {}: {}'.format(client_hostname, msg_in))
+        print('[RS]: incoming from client \'{}\': \'{}\''.format(client_hostname, msg_in))
 
         queried_hostname = msg_in
 
@@ -131,7 +131,7 @@ def main(argv):
 
         data_out = msg_out.decode('utf-8')
         rs_sock.sendto(data_out, client_binding)
-        print('[RS]: outgoing to {}: {}\n'.format(client_hostname, msg_out))
+        print('[RS]: outgoing to client \'{}\': \'{}\'\n'.format(client_hostname, msg_out))
     
     return EX_OK
 
