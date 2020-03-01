@@ -37,7 +37,9 @@
 
 from utils import file_to_list
 from utils import str_to_list
-from utils import append_to_file_from_list
+from utils import write_to_file_from_list
+
+import utils ## use more specific qualifiers later
 
 from dns_module import DNS_table
 
@@ -145,7 +147,7 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
                 msg_out = queried_hostname
                 data_out = msg_out.encode('utf-8')
                 cl_sock_ts.send(data_out)
-                print('[client] outgoing to TS server \'{}\': \'{}\''.format(ts_hostname, queried_hostname))
+                print('[client]: outgoing to TS server \'{}\': \'{}\''.format(ts_hostname, queried_hostname))
 
                 try:
                     data_in = cl_sock_ts.recv(128)
@@ -234,9 +236,9 @@ def main(argv):
                                       ts_portno)
 
     if len(resolved_list) > 0:
-        append_to_file_from_list(output_file_str, resolved_list)
+        write_to_file_from_list(output_file_str, resolved_list, 'w')
 
-    print('')
+    print('')    
     return EX_OK
 
 if __name__ == '__main__':

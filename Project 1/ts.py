@@ -118,9 +118,9 @@ def main(argv):
         client_binding = (client_hostname, client_portno)
 
         msg_in = data_in.decode('utf-8')
-        print('[TS]: incoming from client \'{}\': \'{}\''.format(client_hostname, msg_in))
-
         queried_hostname = msg_in
+
+        print('[TS]: incoming from client \'{}\': \'{}\''.format(client_hostname, msg_in))
 
         if table.has_hostname(queried_hostname):
             msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
@@ -129,8 +129,10 @@ def main(argv):
 
         data_out = msg_out.decode('utf-8')
         ts_sock.sendto(data_out, client_binding)
+
         print('[TS]: outgoing to client \'{}\': \'{}\'\n'.format(client_hostname, msg_out))
 
+    print('')
     return EX_OK
 
 if __name__ == '__main__':

@@ -74,8 +74,8 @@ def str_to_list(input_str, delim):
     output_list = [word.strip() for word in input_str.split(delim)]
     return output_list
 
-def append_to_file_from_list(output_file_str, input_list):
-    """Appends str from input_list to a file named output_file_str, with each
+def write_to_file_from_list(output_file_str, input_list, flag):
+    """Writes/appends each str from input_list to a file named output_file_str, with each
     appendage suffixed with a linebreak
 
         Args:
@@ -84,16 +84,64 @@ def append_to_file_from_list(output_file_str, input_list):
             
             input_list: str
                 The name of a list of str
+            
+            flag: str
+                For open() call, should be 'w' for write or 'a' for append
         Returns:
             (none)
         Raises:
             (none)
     """
-    if path.isfile(output_file_str):
-        print('[utils]: NOTE - Output file {} exists. Will append to file.'.format(output_file_str))
-    else:
-        print('[utils]: SUCCESS - New file {} will be created for output.'.format(output_file_str))
+    message = []
 
-    with open(output_file_str, 'a') as output_file:
+    if flag is 'w':
+        message = ('overwrite', 'written')
+    elif flag is 'a':
+        message = ('append to', 'appended')
+    else:
+        print('[utils]: ERROR - flag must be \'w\' for write or \'a\' for append.')
+        return
+
+    if path.isfile(output_file_str):
+        print('[utils]: NOTE - Output file {} exists. Will {} existing contents.'.format(output_file_str, message[0]))
+    else:
+        print('[utils]: NOTE - New file {} will be created for output.'.format(output_file_str))
+
+    with open(output_file_str, flag) as output_file:
         for line in input_list:
             output_file.write(line + '\n')
+
+    print('[utils]: SUCCESS - Contents of successfully {} to {}.'.format(message[1], output_file_str))
+
+class K:
+    NRM = '\033[00m'
+    
+    class color:
+        GRY = '\033[0;02m'
+        RED = '\033[0;31m'
+        GRN = '\033[0;32m'
+        YEL = '\033[0;33m'
+        BLU = '\033[0;34m'
+        MAG = '\033[0;35m'
+        CYN = '\033[0;36m'
+        WHT = '\033[0;37m'
+        
+        class bold:
+            RED = '\033[1;31m'
+            GRN = '\033[1;32m'
+            YEL = '\033[1;33m'
+            BLU = '\033[1;34m'
+            MAG = '\033[1;35m'
+            CYN = '\033[1;36m'
+            WHT = '\033[1;37m'
+
+    class italic:
+        ITL = '\033[0;03m'
+    
+    class underline:
+        ULN = '\033[0;04m'
+    
+    class special:
+        BNK = '\033[0;05m'
+        HIL = '\033[0;07m'
+    
