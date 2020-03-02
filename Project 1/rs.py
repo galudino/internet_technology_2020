@@ -112,6 +112,7 @@ def main(argv):
     table.append_from_file(input_file_str)
 
     rs_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     rs_binding = (rs_hostname, rs_portno)
     rs_sock.bind(rs_binding)
 

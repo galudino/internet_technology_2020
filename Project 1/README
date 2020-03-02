@@ -47,10 +47,10 @@ I started by carring over some functions from HW 1 that could be reused
         takes an input string and returns a list of substrings
         with each element being a substring delimited by a parameter string
         (in this case, the delimiter would be whitespace, or ' ')
-    append_to_file_from_list
+    write_to_file_from_list
         Takes a list and writes each element from that list to a file
             If the file does not exist, it will be created first
-            Then contents of list will be appended to the file
+            Then contents of list will be written or appended to the file (based on input parameter flag 'w' or 'a')
 
 Then I wrote if/else blocks for client.py, rs.py, and ts.py
 to check for proper command line argument count when
@@ -75,21 +75,31 @@ In client.py,
         which consists of the strings sent back from RS or TS that will be
         written to the final output file.
 
-        A client socket connection to RS will be opened,
-        and for each query from the hostname_list:
-            take the received string and use str_to_list to parse it
-            into a list of strings. a well-formed received string
-            should generate a list of size 3.
+        Within query_servers:
+            A client socket connection to RS will be opened.
+            Then, for each element from the hostname_list:
+                queried_hostname = element
+                message_out = queried_hostname
 
-            if the received string from RS has the 'A' flag (last element):
-                append the string to resolved_list
-            else if the received string for RS has the 'NS' flag (last element):
-                open a new client socket connection to TS using
-                the first element in the list returned from str_to_list
+                send message_out to RS
+                receive message_in from RS and decode as received_string
 
-                append the string received by TS to the resolved_list.
+                take received_string and use str_to_list to parse it
+                into a list of strings. (generated_list) 
+                a well-formed received string should generate a list of size 3.
 
-    Finally, if the resolved_list is not empty,
+                if generated_list[2] (parsed received_string) has the 'A' flag:
+                    append received_string to resolved_list
+                else if generated_list[2] has the 'NS' flag:
+                    open a new client socket connection to TS using
+                    generated_list[0], the TS hostname.
+
+                    send message_out to TS
+                    receive message_in from TS and decode as received_string
+
+                    append received_string to resolved_list.
+
+    Finally, if resolved_list is not empty,
         we append the contents of resolved_list to a file named output_file_str.
 
 In rs.py/ts.py (they work just about the same):
@@ -101,7 +111,8 @@ In rs.py/ts.py (they work just about the same):
         receive data from a prospective client,
         along with their client_binding (hostname, portno)
 
-        receive the queried_hostname from the client
+        receive message_in from the client
+        queried_hostname = message_in.decode('utf-8')
 
         search the DNS_table with key queried_hostname
             if the table has the hostname:
