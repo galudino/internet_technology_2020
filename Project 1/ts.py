@@ -115,6 +115,8 @@ def main(argv):
         print('[TS]: ERROR - server socket open error.\n')
         exit()
 
+    ts_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     print('[TS]: Opened new datagram socket.\n')
     
     ts_binding = (ts_hostname, ts_portno)

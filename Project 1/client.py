@@ -97,6 +97,8 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
         print('[client]: ERROR - client socket open error.\n')
         exit()
 
+    cl_sock_rs.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     print('[client]: Opened new datagram socket.\n')
 
     rs_binding = (rs_hostname, rs_portno)

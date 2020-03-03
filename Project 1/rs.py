@@ -117,6 +117,8 @@ def main(argv):
         print('[RS]: ERROR - server socket open error.\n')
         exit()
 
+    rs_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     print('[RS]: Opened new datagram socket.\n')
 
     rs_binding = (rs_hostname, rs_portno)
