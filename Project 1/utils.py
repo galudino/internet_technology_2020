@@ -41,7 +41,9 @@ __date__ = "04 Mar 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
+
+CHAIN_LINK = '--------------------------------------------------------------'
 
 def file_to_list(input_file_str):
     """Creates a [str] using lines taken from a file named input_file_str;

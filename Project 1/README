@@ -38,7 +38,7 @@ Gemuele (Gem) Aludino       ga354
 
 1. Briefly discuss how you implemented your recursive client functionality.
 -------------------------------------------------------------------------------
-I started by carring over some functions from HW 1 that could be reused
+I started by carrying over some functions from HW 1 that could be reused
 (in utils.py):
     file_to_list
         opens a file and returns a list of strings

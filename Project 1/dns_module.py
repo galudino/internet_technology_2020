@@ -40,6 +40,14 @@ from os import path
 from enum import Enum
 from collections import namedtuple
 
+__author__ = "Gemuele (Gem) Aludino"
+__copyright__ = "Copyright (c) 2020, Gemuele Aludino"
+__date__ = "04 Mar 2020"
+__license__ = "MIT"
+__email0__ = "g.aludino@gmail.com"
+__email1__ = "gem.aludino@rutgers.edu"
+__status__ = "Release"
+
 HOST_NOT_FOUND_STR = 'Error:HOST NOT FOUND'
 
 class DNS_table:
@@ -71,14 +79,14 @@ class DNS_table:
         for key, value in self.__table.iteritems():
             if key.lower() == q:
                 found = True
-                print('[dns_module]: Found queried hostname \'{}\' with value ({}, {}) in table.'.format(query, value[0], value[1]))
+                print('[dns_module]: Found queried hostname \'{}\' with value \'({}, {})\' in table.'.format(query, value[0], value[1]))
                 break
 
         if not found:
             print('[dns_module]: Unable to find hostname \'{}\' in table.'.format(query))
 
         return found  
-
+    
     def ipaddr(self, key):
         return self.__table[key.lower()][0]
     
@@ -133,25 +141,5 @@ class DNS_table:
         self.__table.clear()
 
     def empty(self):
-        return len(self.__table) == 0
-
-    def write_to_file(self, output_file_str):
-        if len(self.__table) == 0:
-            print('[dns_module]: Will not write to output file - table is empty. Returning now.')
-            return
-
-        if path.isfile(output_file_str):
-            print('[dns_module]: Output file \'{}\' exists; will append table contents.'.format(output_file_str))
-        else:
-            print('[dns_module]: New file \'{}\' will be created for output.'.format(output_file_str))
-        
-        with open(output_file_str, 'a') as output_file:
-            for key, value in self.__table.iteritems():
-                outstr = '{} {} {}'.format(key, value[0], value[1])
-                output_file.write('{}\n'.format(outstr))
-
-                print('[dns_module]: writing \'{}\' to \'{}\'.'.format(outstr, output_file_str))
-        
-            output_file.close()
-
-        print('[dns_module]: SUCCESS - output file \'{}\' with DNS_table contents created.'.format(output_file_str))
+        return len(self.__table) == 0   
+    

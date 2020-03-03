@@ -33,8 +33,6 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-### Run order: ts.py, rs.py, client.py
-
 from os import EX_OK
 from sys import argv
 
@@ -54,7 +52,7 @@ __date__ = "04 Mar 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def main(argv):
     """Main function, where client function is called
@@ -94,6 +92,7 @@ def main(argv):
     rs_hostname = ''
     rs_ipaddr = ''
 
+    client_ipaddr = ''
     client_hostname = ''
     client_portno = 0
     client_binding = ('', '')
@@ -108,22 +107,37 @@ def main(argv):
         print(usage_str)
         exit()
 
+    print('')
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    rs_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        rs_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except EnvironmentError:
+        print('[RS]: ERROR - server socket open error.\n')
+        exit()
+
+    print('[RS]: Opened new datagram socket.\n')
 
     rs_binding = (rs_hostname, rs_portno)
     rs_sock.bind(rs_binding)
 
+    rs_hostname = socket.gethostname()
+    rs_ipaddr = socket.gethostbyname(rs_hostname)
+
+    print('[RS]: Server hostname is \'{}\'.'.format(rs_hostname))
+    print('[RS]: Server IP address is \'{}\'.\n'.format(rs_ipaddr))
+
     while True:
-        data_in, (client_hostname, client_portno) = rs_sock.recvfrom(128)
-        client_binding = (client_hostname, client_portno)
+        data_in, (client_ipaddr, client_portno) = rs_sock.recvfrom(128)
+        client_binding = (client_ipaddr, client_portno)
+
+        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
 
         msg_in = data_in.decode('utf-8')
         queried_hostname = msg_in
 
-        print('[RS]: incoming from client \'{}\': \'{}\''.format(client_hostname, msg_in))
+        print('[RS]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
 
         if table.has_hostname(queried_hostname):
             msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
@@ -133,7 +147,7 @@ def main(argv):
         data_out = msg_out.decode('utf-8')
         rs_sock.sendto(data_out, client_binding)
 
-        print('[RS]: outgoing to client \'{}\': \'{}\'\n'.format(client_hostname, msg_out))
+        print('[RS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
     
     print('')
     return EX_OK

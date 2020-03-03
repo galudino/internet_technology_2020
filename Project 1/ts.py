@@ -33,8 +33,6 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-### Run order: ts.py, rs.py, client.py
-
 from os import EX_OK
 from sys import argv
 
@@ -54,7 +52,7 @@ __date__ = "04 Mar 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def main(argv):
     """Main function, where client function is called
@@ -92,6 +90,7 @@ def main(argv):
     ts_hostname = ''
     ts_ipaddr = ''
 
+    client_ipaddr = ''
     client_hostname = ''
     client_portno = 0
     client_binding = ('', '')
@@ -106,21 +105,37 @@ def main(argv):
         print(usage_str)
         exit()
 
+    print('')
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    ts_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        ts_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except EnvironmentError:
+        print('[TS]: ERROR - server socket open error.\n')
+        exit()
+
+    print('[TS]: Opened new datagram socket.\n')
+    
     ts_binding = (ts_hostname, ts_portno)
     ts_sock.bind(ts_binding)
 
+    ts_hostname = socket.gethostname()
+    ts_ipaddr = socket.gethostbyname(ts_hostname)
+
+    print('[TS]: Server hostname is \'{}\'.'.format(ts_hostname))
+    print('[TS]: Server IP address is \'{}\'.\n'.format(ts_ipaddr))
+
     while True:
-        data_in, (client_hostname, client_portno) = ts_sock.recvfrom(128)
-        client_binding = (client_hostname, client_portno)
+        data_in, (client_ipaddr, client_portno) = ts_sock.recvfrom(128)
+        client_binding = (client_ipaddr, client_portno)
+
+        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
 
         msg_in = data_in.decode('utf-8')
         queried_hostname = msg_in
 
-        print('[TS]: incoming from client \'{}\': \'{}\''.format(client_hostname, msg_in))
+        print('[TS]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
 
         if table.has_hostname(queried_hostname):
             msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
@@ -130,7 +145,7 @@ def main(argv):
         data_out = msg_out.decode('utf-8')
         ts_sock.sendto(data_out, client_binding)
 
-        print('[TS]: outgoing to client \'{}\': \'{}\'\n'.format(client_hostname, msg_out))
+        print('[TS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
 
     print('')
     return EX_OK

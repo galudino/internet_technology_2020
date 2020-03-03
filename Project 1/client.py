@@ -33,13 +33,10 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-### Run order: ts.py, rs.py, client.py
-
 from utils import file_to_list
 from utils import str_to_list
 from utils import write_to_file_from_list
-
-import utils ## use more specific qualifiers later
+from utils import CHAIN_LINK
 
 from dns_module import DNS_table
 
@@ -65,13 +62,19 @@ __date__ = "04 Mar 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
+    client_ipaddr = ''
+    client_hostname = ''
+    
     cl_sock_rs = 0
-
     cl_sock_ts = 0
+
+    rs_ipaddr = ''
+
     ts_hostname = ''
+    ts_ipaddr = ''
     ts_binding = ('', '')
     
     resolved_list = []
@@ -86,13 +89,15 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
     delimiter = ' '
     reply_elems = []
 
-    ts_not_found = False
+    ts_connected = False
 
     try:
         cl_sock_rs = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     except EnvironmentError:
         print('[client]: ERROR - client socket open error.\n')
         exit()
+
+    print('[client]: Opened new datagram socket.\n')
 
     rs_binding = (rs_hostname, rs_portno)
 
@@ -102,14 +107,24 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
         print('[client]: ERROR - client socket connect error.\n')
         exit()
 
+    client_hostname = socket.gethostname()
+    client_ipaddr = socket.gethostbyname(client_hostname)
+
+    print('[client]: Client hostname is \'{}\'.'.format(client_hostname))
+    print('[client]: Client IP address is \'{}\'.\n'.format(client_ipaddr))
+
     for elem in hostname_list:
         ts_not_found = False
         queried_hostname = elem
 
+        print('{}\n[client]: Querying hostname \'{}\'...\n{}\n'.format(CHAIN_LINK, queried_hostname, CHAIN_LINK))
+
+        rs_ipaddr = socket.gethostbyname(rs_hostname)
+
         msg_out = queried_hostname
         data_out = msg_out.encode('utf-8')
         cl_sock_rs.send(data_out)
-        print('[client]: outgoing to RS server \'{}\': \'{}\''.format(rs_hostname, queried_hostname))
+        print('[client]: outgoing to RS server \'{}\' at \'{}\': \'{}\''.format(rs_hostname, rs_ipaddr, queried_hostname))
         
         try:
             data_in = cl_sock_rs.recv(128)
@@ -118,7 +133,7 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
             return resolved_list
 
         msg_in = data_in.decode('utf-8')
-        print('[client]: incoming from RS server \'{}\': \'{}\''.format(rs_hostname, msg_in))
+        print('[client]: incoming from RS server \'{}\' at \'{}\': \'{}\''.format(rs_hostname, rs_ipaddr, msg_in))
 
         reply_elems = str_to_list(msg_in, delimiter)
 
@@ -136,33 +151,47 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
                     print('[client]: ERROR - client socket open error.\n')
                     continue
 
+                print('[client]: Opened new datagram socket.')
+
                 ts_binding = (ts_hostname, ts_portno)
 
                 try:
                     cl_sock_ts.connect(ts_binding)
                 except EnvironmentError:
-                    print('[client]: ERROR - client socket connection error.\n')
+                    print('[client]: ERROR - client socket connect error.\n')
                     continue
+                
+                ts_connected = True
+                ts_ipaddr = socket.gethostbyname(ts_hostname)
 
                 msg_out = queried_hostname
                 data_out = msg_out.encode('utf-8')
                 cl_sock_ts.send(data_out)
-                print('[client]: outgoing to TS server \'{}\': \'{}\''.format(ts_hostname, queried_hostname))
+                print('[client]: outgoing to TS server \'{}\' at \'{}\': \'{}\''.format(ts_hostname, ts_ipaddr, queried_hostname))
 
                 try:
                     data_in = cl_sock_ts.recv(128)
                 except EnvironmentError:
                     print('[client]: ERROR - TS server by hostname \'{}\' not available.'.format(rs_binding[0]))
-                    ts_not_found = True
+                    ts_connected = False
                 
-                if ts_not_found == False:
+                if ts_connected:
                     msg_in = data_in.decode('utf-8')
-                    print('[client]: incoming from TS server \'{}\': \'{}\''.format(ts_hostname, msg_in))
+                    print('[client]: incoming from TS server \'{}\' at \'{}\': \'{}\''.format(ts_hostname, ts_ipaddr, msg_in))
+
+                    reply_elems = str_to_list(msg_in, delimiter)
+
+                    if len(reply_elems) == 3 and reply_elems[1] != '-':
+                        pass
+                    elif len(reply_elems) == 5 and reply_elems[2] == 'Error:HOST':
+                        pass
+                    else:
+                        print('[client]: NOTE - message from \'{}\' (at \'{}\'), \'{}\' is malformed. Appending to resolved_list anyway.'.format(ts_hostname, ts_ipaddr, msg_in))  
 
                     resolved_list.append(msg_in)
                     cl_sock_ts.close()
             else:
-                print('[client]: message from \'{}\', \'{}\' is malformed.'.format(rs_hostname, msg_in))
+                print('[client]: message from \'{}\' (at \'{}\'), \'{}\' is malformed.'.format(rs_hostname, rs_ipaddr, msg_in))
 
         print('')
 
@@ -227,6 +256,7 @@ def main(argv):
         print(usage_str)
         exit()
 
+    print('')
     hostname_list = file_to_list(input_file_str)
 
     if len(hostname_list) > 0:
