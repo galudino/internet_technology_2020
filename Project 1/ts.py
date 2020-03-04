@@ -118,8 +118,8 @@ def main(argv):
     ts_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     print('[TS]: Opened new datagram socket.\n')
-    
-    ts_binding = (ts_hostname, ts_portno)
+
+    ts_binding = ('', ts_portno)
     ts_sock.bind(ts_binding)
 
     ts_hostname = socket.gethostname()

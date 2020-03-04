@@ -121,7 +121,7 @@ def main(argv):
 
     print('[RS]: Opened new datagram socket.\n')
 
-    rs_binding = (rs_hostname, rs_portno)
+    rs_binding = ('', rs_portno)
     rs_sock.bind(rs_binding)
 
     rs_hostname = socket.gethostname()

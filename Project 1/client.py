@@ -104,9 +104,10 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
     rs_binding = (rs_hostname, rs_portno)
 
     try:
+        socket.gethostbyname(rs_hostname)
         cl_sock_rs.connect(rs_binding)
     except EnvironmentError:
-        print('[client]: ERROR - client socket connect error.\n')
+        print('[client]: ERROR - Unable to connect to RS server \'{}\'\n'.format(rs_hostname))
         exit()
 
     client_hostname = socket.gethostname()
@@ -158,9 +159,10 @@ def query_servers(rs_hostname, rs_portno, hostname_list, ts_portno):
                 ts_binding = (ts_hostname, ts_portno)
 
                 try:
+                    socket.gethostbyname(rs_hostname)
                     cl_sock_ts.connect(ts_binding)
                 except EnvironmentError:
-                    print('[client]: ERROR - client socket connect error.\n')
+                    print('[client]: ERROR - Unable to connect to TS server \'{}\'.\n'.format(ts_hostname))
                     continue
                 
                 ts_connected = True
