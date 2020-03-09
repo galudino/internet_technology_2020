@@ -1,0 +1,54 @@
+"""README
+    Project 2: Load-balancing DNS servers (README)
+
+    Rutgers University
+        School of Arts and Sciences
+            (01:198:352) Internet Technology
+            Professor Nath Badri
+            Section 02
+
+    Assignment synopsis:
+        (TODO)
+
+    Copyright © 2020 Gemuele Aludino
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files
+    (the "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BY NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+    BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
+    THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
+1. Please write down the full names and NetIDs of both your team members.
+-------------------------------------------------------------------------------
+Gemuele (Gem) Aludino       ga354
+
+2. Briefly discuss how you implemented the LS functionality of tracking which TS responded to the query and timing out if neither TS responded.
+-------------------------------------------------------------------------------
+(TODO)
+
+3. Are there known issues or functions that aren't working currently in your attached code? If so, explain.
+-------------------------------------------------------------------------------
+(TODO)
+
+4. What problems did you face developing code for this project?
+-------------------------------------------------------------------------------
+(TODO)
+
+5. What did you learn by working on this project?
+-------------------------------------------------------------------------------
+(TODO)
+
