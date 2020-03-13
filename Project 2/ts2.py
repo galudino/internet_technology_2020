@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 """README
-    Project 2: Load-balancing DNS servers
+    Project 2: Load-balancing DNS servers (top-level DNS server socket 2)
 
     Rutgers University
         School of Arts and Sciences
@@ -9,7 +9,24 @@
             Section 02
 
     Assignment synopsis:
-        (TODO)
+        In project 2, we will explore a design that implements load balancing among DNS servers by splitting the set of hostnames across multiple DNS servers.
+
+        You will change the root server from project 1, RS, into a load-balancing server LS, that interacts with two top-level domain servers, TS1 and TS2. Only the TS servers store mappings from hostnames to IP addresses; the LS does not. 
+        
+        Further, the mappings stored by the TS servers do not overlap with each other; as a result, AT MOST ONE of the two TS servers will send a response to LS. 
+        
+        Overall, you will have four programs: the client, the load-balancing server (LS), and two DNS servers (TS1 and TS2).
+
+        Each query proceeds as follows. 
+        The client program makes the query (in the form of a hostname) to the LS. LS then forwards the query to _both_ TS1 and TS2. 
+    
+        However, at most one of TS1 and TS2 contain the IP address for this hostname. Only when a TS server contains a mapping will it respond to LS; otherwise, that TS sends nothing back.
+
+        There are three possibilities. Either (1) LS receives a response from TS1, or (2) LS receives a response from TS2, or (3) LS receives no response from either TS1 or TS2 within a fixed timeout interval (see details below).
+        
+        If the LS receives a response (cases (1) and (2) above), it forwards the response as is to the client. If it times out waiting for a response (case 3) it sends an error string to the client. More details will follow.
+        
+        Please see the attached pictures showing interactions among the different programs.
 
     Copyright (c) 2020 Gemuele Aludino
 
@@ -33,3 +50,136 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from os import EX_OK
+from sys import argv
+
+from dns_module import DNS_table
+
+DEFAULT_INPUT_FILE_STR_TS2 = "PROJ2-DNSTS2.txt"
+DEFAULT_PORTNO_TS2 = 50009
+
+import socket
+import threading
+import time
+import random
+
+__author__ = "Gemuele (Gem) Aludino"
+__copyright__ = "Copyright (c) 2020, Gemuele Aludino"
+__date__ = "06 Apr 2020"
+__license__ = "MIT"
+__email0__ = "g.aludino@gmail.com"
+__email1__ = "gem.aludino@rutgers.edu"
+__status__ = "Debug"
+
+def main(argv):
+    """Main function, where client function is called
+
+        Args:
+            Command line arguments (as per sys.argv)
+                argv[1] - ts2_listen_port
+                    desired port number for TS2 program
+                argv[2] - input_file (OPTIONAL)
+                    desired name of input file of entries for TS2 program
+        Returns:
+            Exit status, by default, 0 upon exit
+        Raises:
+            (none)
+    """
+    arg_length = len(argv)
+
+    usage_str = '\nUSAGE:\npython {} [ts2_listen_port]\npython {} [ts2_listen_port] [input_file]\n'.format(argv[0], argv[0])
+
+    ts2_portno = DEFAULT_PORTNO_TS2
+
+    input_file_str = '__NONE__'
+
+    table = {}
+    queried_hostname = ''
+
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
+    ts2_sock = 0
+    ts2_binding = ('', '')
+    ts2_hostname = ''
+    ts2_ipaddr = ''
+
+    client_ipaddr = ''
+    client_hostname = ''
+    client_portno = 0
+    client_binding = ('', '')
+
+    ### debugging args
+    if arg_length is 1:
+        ts2_portno = DEFAULT_PORTNO_TS2
+        input_file_str = DEFAULT_INPUT_FILE_STR_TS2
+    ### end debugging args
+    elif arg_length is 2:
+        ts2_portno = int(argv[1])
+        input_file_str = DEFAULT_INPUT_FILE_STR_TS2
+    elif arg_length is 3:
+        ts2_portno = int(argv[1])
+        input_file_str = argv[2]
+    else:
+        print(usage_str)
+        exit()
+
+    print('')
+    table = DNS_table()
+    table.append_from_file(input_file_str)
+
+    try:
+        ts2_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except EnvironmentError:
+        print('[TS2]: ERROR - server socket open error.\n')
+        exit()
+
+    ts2_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    print('[TS2]: Opened new datagram socket.\n')
+
+    ts2_binding = ('', ts2_portno)
+    ts2_sock.bind(ts2_binding)
+
+    ts2_hostname = socket.gethostname()
+    ts2_ipaddr = socket.gethostbyname(ts2_hostname)
+
+    print('[TS2]: Server hostname is \'{}\'.'.format(ts2_hostname))
+    print('[TS2]: Server IP address is \'{}\'.\n'.format(ts2_ipaddr))
+
+    while True:
+        data_in, (client_ipaddr, client_portno) = ts2_sock.recvfrom(128)
+        client_binding = (client_ipaddr, client_portno)
+
+        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
+
+        msg_in = data_in.decode('utf-8')
+        queried_hostname = msg_in
+
+        print('[TS2]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
+
+        if table.has_hostname(queried_hostname):
+            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+        else:
+            """
+            msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
+            """
+            msg_out = '__NONE__'
+
+        if msg_out != '__NONE__':
+            data_out = msg_out.decode('utf-8')
+            ts2_sock.sendto(data_out, client_binding)
+
+            print('[TS2]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
+
+    print('')
+    return EX_OK
+
+if __name__ == '__main__':
+    """
+        Program execution begins here.
+    """
+    retval = main(argv)
