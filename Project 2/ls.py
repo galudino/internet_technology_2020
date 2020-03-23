@@ -53,6 +53,15 @@
 from os import EX_OK
 from sys import argv
 
+from utils import K
+from utils import logstat
+from utils import log
+from utils import funcname
+from utils import logstr
+
+from network import udp_socket_open
+from network import is_valid_hostname
+
 from dns_module import DNS_table
 
 from ts1 import DEFAULT_PORTNO_TS1
@@ -75,6 +84,111 @@ __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
+
+def start_ls(ls_portno, ts1_hostname, ts1_portno, ts2_hostname, ts2_portno):
+    ls_binding = ('', ls_portno)
+
+    ls_sock = udp_socket_open()
+    ls_sock.bind(ls_binding)
+
+    ts1_sock = udp_socket_open()
+    ts1_ipaddr = is_valid_hostname(ts1_hostname)
+    ts1_binding = (ts1_hostname, ts1_portno)
+
+    ts2_sock = udp_socket_open()
+    ts2_ipaddr = is_valid_hostname(ts2_hostname)
+    ts2_binding = (ts2_hostname, ts2_portno)
+
+    tval = 0.0025
+
+    queried_hostname = ''
+
+    msg_log = ''
+
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
+    ts1_sock.settimeout(tval)
+    ts2_sock.settimeout(tval)
+
+    while True:
+        ## receive incoming data from client
+        data_in, (client_ipaddr, client_portno) = ls_sock.recvfrom(128)
+        client_binding = (client_ipaddr, client_portno)
+
+        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
+
+        msg_in = data_in.decode('utf-8')
+        queried_hostname = msg_in
+
+        ## log incoming data
+        msg_log = logstr(client_hostname, client_ipaddr, queried_hostname)
+        log(logstat.IN, funcname(), msg_log)
+
+        ## log outgoing data to TS1
+        msg_log = logstr(ts1_hostname, ts1_ipaddr, queried_hostname)
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to TS1
+        ts1_sock.sendto(data_in, ts1_binding)
+
+        ## log outgoing data to TS2
+        msg_log = logstr(ts2_hostname, ts2_ipaddr, queried_hostname)
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to TS2
+        ts2_sock.sendto(data_in, ts2_binding)
+
+        try:
+            data_in = ts1_sock.recv(128)
+        except socket.timeout:
+            msg_log = logstr(ts1_hostname, ts1_ipaddr, '[Connection timeout]')
+            log(logstat.LOG, funcname(), msg_log)
+            
+            try:
+                data_in = ts2_sock.recv(128)
+            except socket.timeout:
+                msg_log = logstr(ts2_hostname, ts2_ipaddr, '[Connection timeout]')
+                log(logstat.LOG, funcname(), msg_log)
+            
+                msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
+
+                msg_log = logstr(client_hostname, client_ipaddr, msg_out)
+                log(logstat.OUT, funcname(), msg_log)
+                ls_sock.sendto(msg_out.encode('utf-8'), client_binding)
+
+                print('')
+                continue
+            
+            ## log incoming data from TS2
+            msg_log = logstr(ts2_hostname, ts2_ipaddr, data_in.decode('utf-8'))
+            log(logstat.IN, funcname(), msg_log)
+
+            ## log outgoing data to client
+            msg_log = logstr(client_hostname, client_ipaddr, data_in.decode('utf-8'))
+            log(logstat.OUT, funcname(), msg_log)
+
+            ## send outgoing data to client
+            ls_sock.sendto(data_in, client_binding)
+            
+            print('')
+            continue
+        
+        ## log incoming data from TS1
+        msg_log = logstr(ts1_hostname, ts1_ipaddr, data_in.decode('utf-8'))
+        log(logstat.IN, funcname(), msg_log)
+
+        ## log outgoing data to client
+        msg_log = logstr(client_hostname, client_ipaddr, data_in.decode('utf-8'))
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to client
+        ls_sock.sendto(data_in, client_binding)
+        
+        print('')
 
 def main(argv):
     """Main function
@@ -103,30 +217,6 @@ def main(argv):
 
     ts1_portno = 0
     ts2_portno = 0
-
-    msg_in = ''
-    msg_out = ''
-
-    data_in = ''
-    data_out = ''
-
-    ls_sock = 0
-    ls_binding = ('', '')
-    ls_hostname = ''
-    ls_ipaddr = ''
-
-    client_ipaddr = ''
-    client_hostname = ''
-    client_portno = 0
-    client_binding = ('', '')
-
-    ts1_sock = 0
-    ts1_binding = ('', '')
-    ts1_ipaddr = ''
-
-    ts2_sock = 0
-    ts2_binding = ('', '')
-    ts2_ipaddr = ''
 
     if arg_length is 1:
         ls_portno = DEFAULT_PORTNO_LS
@@ -182,83 +272,7 @@ def main(argv):
 
     print('')
     
-    """
-        Opening datagram (UDP) server socket
-    """
-    try:
-        ls_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    except EnvironmentError:
-        print('[LS]: ERROR - server socket open error.\n')
-        exit()
-
-    ls_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    print('[LS]: Opened new datagram socket.\n')
-
-    ls_binding = ('', ls_portno)
-    ls_sock.bind(ls_binding)
-
-    ls_hostname = socket.gethostname()
-    ls_ipaddr = socket.gethostbyname(ls_hostname)
-
-    print('[LS]: Server hostname is \'{}\'.'.format(ls_hostname))
-    print('[LS]: Server IP address is \'{}\'.\n'.format(ls_ipaddr))
-
-    # Opening TS1 server socket
-    # Opening TS2 server socket
-
-    """
-        Begin routine
-    """
-    while True:
-        data_in, (client_ipaddr, client_portno) = ls_sock.recvfrom(128)
-        client_binding = (client_ipaddr, client_portno)
-
-        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
-
-        msg_in = data_in.decode('utf-8')
-        queried_hostname = msg_in
-
-        print('[LS]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
-
-        ### this is queried_hostname
-        ### data_in = msg_in.encode('utf-8') 
-
-        ### send data_in to TS1
-        ### send data_in to TS2
-
-        ### if timeout,
-            ### msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
-            ### output to STDOUT
-        
-            
-            ###print('[LS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format$(client_hostname, client_ipaddr, msg_out))
-            
-            ### data_out = msg_out.encode('utf-8')
-            ### send data_out to client
-        ### else
-            ### decode reply from either TS server into msg_in
-            ### msg_in = data_in.decode('utf-8') 
-    
-            ### print('[LS]: incoming from TS1 \'{}\' at \'{}\': \'{}\'\n'.format(ts1_hostname, ts1_ipaddr, msg_in))
-
-            ### print('[LS]: incoming from TS2 \'{}\' at \'{}\': \'{}\'\n'.format(ts2_hostname, ts2_ipaddr, msg_in))
-        
-            ### msg_out = msg_in
-        
-            ### print('[LS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
-        
-            ### data_out = msg_out.encode('utf-8')
-            ### send data_out to client
-    
-
-    
-        """ OLD CODE
-        data_out = msg_out.decode('utf-8')
-        rs_sock.sendto(data_out, client_binding)
-
-        print('[RS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
-        """
+    start_ls(ls_portno, ts1_hostname, ts1_portno, ts2_hostname, ts2_portno)
 
     print('')
     return EX_OK

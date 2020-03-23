@@ -50,7 +50,10 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from sys import _getframe
 from os import path
+from datetime import datetime
+from enum import Enum
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -60,7 +63,126 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-CHAIN_LINK = '--------------------------------------------------------------'
+CHAIN_LINK = '-------------------------------------------------------------------------------'
+
+DCHAIN_LINK = '==============================================================================='
+
+STAR_LINK = '*******************************************************************************'
+
+class K:
+    NRM = '\033[00m'
+    
+    class color:
+        GRY = '\033[0;02m'
+        RED = '\033[0;31m'
+        GRN = '\033[0;32m'
+        YEL = '\033[0;33m'
+        BLU = '\033[0;34m'
+        MAG = '\033[0;35m'
+        CYN = '\033[0;36m'
+        WHT = '\033[0;37m'
+        
+        class bold:
+            GRY = '\033[1;02m'
+            RED = '\033[1;31m'
+            GRN = '\033[1;32m'
+            YEL = '\033[1;33m'
+            BLU = '\033[1;34m'
+            MAG = '\033[1;35m'
+            CYN = '\033[1;36m'
+            WHT = '\033[1;37m'
+
+    class italic:
+        ITL = '\033[0;03m'
+    
+    class underline:
+        ULN = '\033[0;04m'
+    
+    class special:
+        BNK = '\033[0;05m'
+        HIL = '\033[0;07m'
+
+class logstat(Enum):
+    IN = 'IN'
+    OUT = 'OUT'
+    OK = 'OK'
+    ERR = 'ERR'
+    WRN = 'WRN'
+    LOG = 'LOG'
+    BUG = 'BUG'
+
+def log(stat, header, msg):
+    """Returns a [str], used for debugging/logging, formatted with a descriptor (based on a [logstat]), timestamp, header (usually a call to funcname()), and msg
+        Args:
+            stat: logstat
+                denotes the color/descriptor of the log message
+            header: str
+                usually used for the calling function name, but up to user
+            msg: str
+                body of logging message, can also be used with logstr() to create a more detailed header for the message body
+        Returns:
+            A [str] consisting of the formatted log message
+        Raises:
+            (none)
+    """
+    color = K.NRM
+
+    if stat == stat.IN:
+        color = K.color.bold.BLU
+    elif stat == stat.OUT:
+        color = K.color.bold.RED
+    elif stat == stat.OK:
+        color = K.color.bold.GRN
+    elif stat == stat.ERR:
+        color = K.color.bold.MAG
+    elif stat == stat.WRN:
+        color = K.color.bold.YEL
+    elif stat == stat.LOG:
+        color = K.color.bold.CYN
+    elif stat == stat.BUG:
+        color = K.color.bold.GRY
+
+    ## With colors
+    print('{}[{}]{} {}{}{} <{}{}{}> {}'.format(color, stat.value, K.NRM, K.color.GRY, datetime.now(), K.NRM, K.color.bold.WHT, header, K.NRM, msg))
+    
+    ## No colors
+    """
+    print('[{}] {} <{}> {}'.format(stat.value, datetime.now(), header, msg))
+    """
+
+def funcname():
+    """Returns a [str] of the calling function
+        Args:
+            (none)
+        Returns:
+            string of the calling function
+        Raises:
+            (none)
+    """
+    return _getframe().f_back.f_code.co_name
+
+def logstr(x, y, z):
+    """Returns a [str] using x, y, and z - purpose determined by user,
+    best for describing a tuple, paired to another value.
+        Args:
+            x: str
+                The 'key' of the tuple
+            y: str
+                The 'value' of the tuple
+            z: str
+                The 'value' of the tuple described by (x, y)
+        Returns:
+            A [str] consisting of '(x : y) z'
+        Raises:
+            (none)
+    """
+    ## With colors
+    return '({}{}{} : {}{}{}) {}->{} {}'.format(K.color.CYN, x, K.NRM, K.color.CYN, y, K.NRM, K.color.bold.YEL, K.NRM, z)
+    
+    ## No colors
+    """
+    return '({} : {}) -> {}'.format(x, y, z)
+    """
 
 def file_to_list(input_file_str):
     """Creates a [str] using lines taken from a file named input_file_str;
@@ -75,15 +197,27 @@ def file_to_list(input_file_str):
             IOError if input_file_str does not exist
     """
     output_list = []
+    msg = ''
     
     try:
         with open(input_file_str, 'r') as input_file:
             output_list = [line.rstrip() for line in input_file]
-            print('[utils]: SUCCESS - Input file \'{}\' opened.\n'.format(input_file_str))
+
+            msg = 'Input file \'{}{}{}\' opened.\n'.format(K.color.bold.WHT, input_file_str, K.NRM)
+
+            log(logstat.OK, funcname(), msg)
+
+            for elem in output_list:
+                msg = 'Appending \'{}{}{}\' to list.'.format(K.color.bold.WHT, elem, K.NRM)
+
+                log(logstat.LOG, funcname(), msg)
+            print('')
 
             input_file.close()
     except IOError:
-        print('[utils]: ERROR - Input file \'{}\' not found.\n'.format(input_file_str))
+        msg = 'Input file \'{}{}{}\' not found.\n'.format(K.color.bold.WHT, input_file_str, K.NRM)
+        
+        log(logstat.ERR, funcname(), msg)
     
     return output_list
 
@@ -91,6 +225,13 @@ def str_to_list(input_str, delim):
     output_list = []
     
     output_list = [word.strip() for word in input_str.split(delim)]
+
+    for elem in output_list:
+        msg = 'Stripped \'{}{}{}\' from \'{}{}{}\' by delimiter \'{}{}{}\''.format(K.color.bold.WHT, elem, K.NRM, K.color.bold.WHT, input_str, K.NRM, K.color.bold.WHT, delim, K.NRM)
+
+        log(logstat.LOG, funcname(), msg)
+    print('')
+
     return output_list
 
 def write_to_file_from_list(output_file_str, input_list, flag):
@@ -112,9 +253,12 @@ def write_to_file_from_list(output_file_str, input_list, flag):
             (none)
     """
     message = []
+    msg = ''
 
     if len(input_list) == 0:
-        print('[utils]: ERROR - cannot use write_to_file_from_list using empty input_list.')
+        msg = 'Cannot use this function with an empty input_list.\n'
+        
+        log(logstat.ERR, funcname(), msg)
         return
 
     if flag is 'w':
@@ -122,49 +266,27 @@ def write_to_file_from_list(output_file_str, input_list, flag):
     elif flag is 'a':
         message = ('append to', 'appended')
     else:
-        print('[utils]: ERROR - flag must be \'w\' for write or \'a\' for append.')
+        msg = 'Flag must be \'{}w{}\' for write or \'{}a{}\' for append.\n'.format(K.color.bold.WHT, K.NRM, K.color.bold.WHT, K.NRM)
+
+        log(logstat.ERR, funcname(), msg)
         return
 
     if path.isfile(output_file_str):
-        print('[utils]: NOTE - Output file {} exists. Will {} existing contents.'.format(output_file_str, message[0]))
+        msg = 'Output file \'{}{}{}\' exists. Will {} existing contents.\n'.format(K.color.bold.WHT, output_file_str, K.NRM, message[0])
     else:
-        print('[utils]: NOTE - New file {} will be created for output.'.format(output_file_str))
+        msg = 'Will create new file \'{}{}{}\'.'.format(K.color.bold.WHT, output_file_str, K.NRM)
+
+    log(logstat.LOG, funcname(), msg)
 
     with open(output_file_str, flag) as output_file:
         for line in input_list:
             output_file.write(line + '\n')
 
-    print('[utils]: SUCCESS - Contents of successfully {} to {}.'.format(message[1], output_file_str))
+            msg = 'Writing \'{}{}{}\' to output file \'{}{}{}\'.'.format(K.color.bold.WHT, line, K.NRM, K.color.bold.WHT, output_file_str, K.NRM)
 
-class K:
-    NRM = '\033[00m'
-    
-    class color:
-        GRY = '\033[0;02m'
-        RED = '\033[0;31m'
-        GRN = '\033[0;32m'
-        YEL = '\033[0;33m'
-        BLU = '\033[0;34m'
-        MAG = '\033[0;35m'
-        CYN = '\033[0;36m'
-        WHT = '\033[0;37m'
-        
-        class bold:
-            RED = '\033[1;31m'
-            GRN = '\033[1;32m'
-            YEL = '\033[1;33m'
-            BLU = '\033[1;34m'
-            MAG = '\033[1;35m'
-            CYN = '\033[1;36m'
-            WHT = '\033[1;37m'
+            log(logstat.LOG, funcname(), msg)
+        print('')
 
-    class italic:
-        ITL = '\033[0;03m'
+    msg = 'Contents of input_list successfully {} to \'{}{}{}\'.\n'.format(message[1], K.color.bold.WHT, output_file_str, K.NRM)
     
-    class underline:
-        ULN = '\033[0;04m'
-    
-    class special:
-        BNK = '\033[0;05m'
-        HIL = '\033[0;07m'
-    
+    log(logstat.OK, funcname(), msg)

@@ -56,6 +56,12 @@ import threading
 import time
 import random
 
+from utils import K
+from utils import logstat
+from utils import log
+from utils import funcname
+from utils import logstr
+
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
 __date__ = "04 Mar 2020"
@@ -64,10 +70,55 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
+def udp_socket_open():
+    sock = 0
+    msg = ''
+
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    except EnvironmentError:
+        msg = 'Socket open error.\n'
+        log(logstat.ERR, funcname(), msg)
+
+        exit()
+
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    msg = 'Opened new datagram socket.\n'
+    log(logstat.OK, funcname(), msg)
+
+    hostname = socket.gethostname()
+    ipaddr = socket.gethostbyname(hostname)
+
+    msg = 'Hostname is \'{}{}{}\'.'.format(K.color.bold.WHT, hostname, K.NRM)
+    log(logstat.LOG, funcname(), msg)
+
+    msg = 'IP address is \'{}{}{}\'.\n'.format(K.color.bold.WHT, ipaddr, K.NRM)
+    log(logstat.LOG, funcname(), msg)
+
+    return sock
+
+def is_valid_hostname(hostname):
+    try:
+        ipaddr = socket.gethostbyname(hostname)
+    except EnvironmentError:
+        msg = 'Host by name \'{}{}{}\' is not available.\n'.format(K.color.bold.WHT, ls_hostname, K.NRM)
+        log(logstat.ERR, funcname(), msg)
+
+        return None
+    
+    msg = 'Verified hostname and IP address ({}{}{} : {}{}{})\n'.format(K.color.CYN, hostname, K.NRM, K.color.CYN, ipaddr, K.NRM)
+
+    log(logstat.OK, funcname(), msg)
+
+    return ipaddr
+        
+
+"""
 class Socket:
     m_sock = 0
-    hostname = ''
-    portno = 0
+    m_hostname = ''
+    m_portno = 0
 
     def __init__(self, hostname, portno):
         try:
@@ -76,8 +127,8 @@ class Socket:
             print('[network]: \'{}\' is not a valid hostname.\n'.format(hostname))
             exit()
         
-        self.hostname = hostname
-        self.portno = portno
+        self.m_hostname = hostname
+        self.m_portno = portno
 
 class UDPSocket(Socket):
     def __init__(self, hostname, portno):
@@ -96,7 +147,7 @@ class UDPSocket(Socket):
         server_hostname = ''
         server_ipaddr = ''
 
-        binding = (self.hostname, self.portno)
+        binding = (self.m_hostname, self.m_portno)
         
         self.m_sock.bind(binding)
 
@@ -104,18 +155,18 @@ class UDPSocket(Socket):
         server_ipaddr = socket.gethostbyname(server_hostname)
 
         print('[network]: Server hostname is \'{}\'.'.format((server_hostname)))
-        print('[network]: Client IP address is \'{}\'.\n'.format(server_ipaddr))
+        print('[network]: Server IP address is \'{}\'.\n'.format(server_ipaddr))
 
     def connect(self):
         client_hostname = ''
         client_portno = 0
         
-        binding = (self.hostname, self.portno)
+        binding = (self.m_hostname, self.m_portno)
 
         try:
             self.m_sock.connect(binding)
         except EnvironmentError:
-            print('[network]: ERROR - unable to connect to server \'{}\'\n'.format(self.hostname))
+            print('[network]: ERROR - unable to connect to server \'{}\'\n'.format(self.m_hostname))
             exit()
 
         client_hostname = socket.gethostname()
@@ -129,7 +180,7 @@ class UDPSocket(Socket):
 
     def start_server(self, func, func_args):
         while True:
-            data_in, (client_ipaddr, client_portno) = rs_sock.recvfrom(128)
+            data_in, (client_ipaddr, client_portno) = self.m_sock.recvfrom(128)
             client_binding = (client_ipaddr, client_portno)
 
             client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
@@ -141,6 +192,7 @@ class UDPSocket(Socket):
             data_out = func(func_args, msg_in)
 
             data_out = msg_out.encode('utf-8')
-            rs_sock.sendto(data_out, client_binding)
+            self.m_sock.sendto(data_out, client_binding)
 
         print('[RS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
+"""

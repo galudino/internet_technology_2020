@@ -50,6 +50,11 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from utils import K
+from utils import logstat
+from utils import log
+from utils import funcname
+from utils import logstr
 from utils import file_to_list
 from utils import str_to_list
 
@@ -96,11 +101,17 @@ class DNS_table:
         for key, value in self.__table.iteritems():
             if key.lower() == q:
                 found = True
-                print('[dns_module]: Found queried hostname \'{}\' with value \'({}, {})\' in table.'.format(query, value[0], value[1]))
+
+                msg = 'Found queried hostname \'{}{}{}\' with value \'{}({}, {}){}\' in table.'.format(K.color.bold.WHT, query, K.NRM, K.color.bold.WHT, value[0], value[1], K.NRM)
+
+                log(logstat.OK, funcname(), msg)
+
                 break
 
         if not found:
-            print('[dns_module]: Unable to find hostname \'{}\' in table.'.format(query))
+            msg = 'Unable to find hostname \'{}{}{}\' in table.'.format(K.color.bold.WHT, query, K.NRM)
+
+            log(logstat.LOG, funcname(), msg)
 
         return found  
     
@@ -122,17 +133,22 @@ class DNS_table:
             if len(result) != 3:
                 self.__table['ERROR'] = self.addrflag('MALFORMED', 'ENTRY')
                 
-                print('[dns_module]: Input \'{}\' from file \'{}\' is malformed. Unable to add entry to table.\n'.format(line, input_file_str))
+                msg = 'Input \'{}{}{}\' from file \'{}{}{}\' is malformed. Unable to add entry to table.\n'.format(K.color.bold.WHT, line, K.NRM, K.color.bold.WHT, input_file_str, K.NRM)
+
+                log(logstat.ERR, funcname(), msg)
             else:
                 if result[2] == DNS_table.flag.NS.value and self.__ts_hostname == '__NONE__':
                     self.__ts_hostname = result[0]
 
-                    print('[dns_module]: ts_hostname assigned as \'{}\'.'.format(result[0]))
+                    msg = 'ts_hostname assigned as \'{}{}{}\'.'.format(K.color.bold.WHT, result[0], K.NRM)
 
+                    log(logstat.LOG, funcname(), msg)
                 elif result[2] == DNS_table.flag.A.value:
                     self.__table[result[0]] = self.addrflag(result[1], result[2])
 
-                    print('[dns_module]: \'{} : ({}, {})\' added to table from file \'{}\'.'.format(result[0], result[1], result[2], input_file_str))
+                    msg = '{}\'{} : ({}, {}){}\' added to table from file {}\'{}\'{}.'.format(K.color.bold.WHT, result[0], result[1], result[2], K.NRM, K.color.bold.WHT, input_file_str, K.NRM)
+
+                    log(logstat.LOG, funcname(), msg)
         
         print('')       
 
@@ -145,11 +161,15 @@ class DNS_table:
             if result[2] == DNS_table.flag.NS.value and self.__ts_hostname == '__NONE__':
                 self.__ts_hostname = result[0]
 
-                print('[dns_module]: ts_hostname assigned as \'{}\'.'.format(result[0]))
+                msg = 'ts_hostname assigned as \'{}{}{}\'.'.format(K.color.bold.WHT, result[0], K.NRM)
+
+                log(logstat.LOG, funcname(), msg)
             elif result[2] == DNS_table.flag.A.value:
                 self.__table[result[0]] = self.addrflag(result[1], result[2])
+    
+                msg = '{}\'{} : ({}, {}){}\' added to table from string {}\'{}\'{}.'.format(K.color.bold.WHT, result[0], result[1], result[2], K.NRM, K.color.bold.WHT, input_str, K.NRM)
 
-                print('[dns_module]: \'{} : ({}, {})\' added to table from string \'{}\'.'.format(result[0], result[1], result[2], input_str))
+                log(logstat.LOG, funcname(), msg)
 
     def remove(self, hostname):
         self.__table.pop(hostname.lower())

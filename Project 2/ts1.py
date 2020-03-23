@@ -53,6 +53,15 @@
 from os import EX_OK
 from sys import argv
 
+from utils import K
+from utils import logstat
+from utils import log
+from utils import funcname
+from utils import logstr
+
+from network import udp_socket_open
+from network import is_valid_hostname
+
 from dns_module import DNS_table
 
 DEFAULT_INPUT_FILE_STR_TS1 = "PROJ2-DNSTS1.txt"
@@ -71,6 +80,55 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
+def start_ts1(ts1_portno, table):
+    ts1_binding = ('', ts1_portno)
+
+    ts1_sock = udp_socket_open()
+    ts1_sock.bind(ts1_binding)
+
+    queried_hostname = ''
+
+    msg_log = ''
+
+    msg_in = ''
+    msg_out = ''
+
+    data_in = ''
+    data_out = ''
+
+    while True:
+        ## receive incoming data from LS
+        data_in, (ls_ipaddr, ls_portno) = ts1_sock.recvfrom(128)
+        ls_binding = (ls_ipaddr, ls_portno)
+
+        ls_hostname = socket.gethostbyaddr(ls_ipaddr)[0]
+
+        msg_in = data_in.decode('utf-8')
+        queried_hostname = msg_in
+
+        ## log incoming data
+        msg_log = logstr(ls_hostname, ls_ipaddr, queried_hostname)
+        log(logstat.IN, funcname(), msg_log)
+
+        ## search table for queried_hostname
+        if table.has_hostname(queried_hostname):
+            ## if queried_hostname is resolved, reply to LS
+            
+            ## prepare outgoing data to LS
+            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+
+            ## log outgoing data to LS
+            msg_log = logstr(ls_hostname, ls_ipaddr, msg_out)
+            log(logstat.OUT, funcname(), msg_log)
+
+            ## send outgoing data to LS
+            ts1_sock.sendto(msg_out.encode('utf-8'), ls_binding)
+        else:
+            ## if queried_hostname is not resolved, log to stdout
+            log(logstat.LOG, funcname(), 'No outgoing data will be sent for this query.')
+
+        print('')
+            
 def main(argv):
     """Main function, where client function is called
 
@@ -92,25 +150,7 @@ def main(argv):
     ts1_portno = DEFAULT_PORTNO_TS1
 
     input_file_str = '__NONE__'
-
     table = {}
-    queried_hostname = ''
-
-    msg_in = ''
-    msg_out = ''
-
-    data_in = ''
-    data_out = ''
-
-    ts1_sock = 0
-    ts1_binding = ('', '')
-    ts1_hostname = ''
-    ts1_ipaddr = ''
-
-    client_ipaddr = ''
-    client_hostname = ''
-    client_portno = 0
-    client_binding = ('', '')
 
     ### debugging args
     if arg_length is 1:
@@ -128,54 +168,12 @@ def main(argv):
         exit()
 
     print('')
+    
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    try:
-        ts1_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    except EnvironmentError:
-        print('[TS1]: ERROR - server socket open error.\n')
-        exit()
+    start_ts1(ts1_portno, table)
 
-    ts1_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    print('[TS1]: Opened new datagram socket.\n')
-
-    ts1_binding = ('', ts1_portno)
-    ts1_sock.bind(ts1_binding)
-
-    ts1_hostname = socket.gethostname()
-    ts1_ipaddr = socket.gethostbyname(ts1_hostname)
-
-    print('[TS1]: Server hostname is \'{}\'.'.format(ts1_hostname))
-    print('[TS1]: Server IP address is \'{}\'.\n'.format(ts1_ipaddr))
-
-    while True:
-        data_in, (client_ipaddr, client_portno) = ts1_sock.recvfrom(128)
-        client_binding = (client_ipaddr, client_portno)
-
-        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
-
-        msg_in = data_in.decode('utf-8')
-        queried_hostname = msg_in
-
-        print('[TS1]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
-
-        if table.has_hostname(queried_hostname):
-            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
-        else:
-            """
-            msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
-            """
-            msg_out = '__NONE__'
-
-        if msg_out != '__NONE__':
-            data_out = msg_out.decode('utf-8')
-            ts1_sock.sendto(data_out, client_binding)
-
-            print('[TS1]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
-
-    print('')
     return EX_OK
 
 if __name__ == '__main__':

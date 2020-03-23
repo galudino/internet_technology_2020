@@ -53,7 +53,14 @@
 from utils import file_to_list
 from utils import str_to_list
 from utils import write_to_file_from_list
-from utils import CHAIN_LINK
+from utils import K
+from utils import logstat
+from utils import log
+from utils import funcname
+from utils import logstr
+
+from network import udp_socket_open
+from network import is_valid_hostname
 
 from dns_module import DNS_table
 
@@ -78,107 +85,58 @@ import random
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
-__date__ = "04 Mar 2020"
+__date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
 def query_ls(ls_hostname, ls_portno, hostname_list):
-    """Opens UDP client socket and connects to LS server
-
-        Args:
-            ls_hostname
-                hostname for desired LS server
-            ls_portno
-                port number for desired LS server, corresponds to ls_hostname
-            hostname_list
-                list of hostnames populated by calling function to query
-                (will be sent to LS server)
-        Returns:
-            resolved_list
-                list of hostnames mappings resolved by LS
-                (LS reply messages)
-        Raises:
-            (none)
-    """
-    client_ipaddr = ''
-    client_hostname = ''
-
-    cl_sock_ls = 0
-
-    ls_ipaddr = ''
-    ls_binding = ('', '')
-
     resolved_list = []
-    queried_hostname = ''
+
+    ls_sock = udp_socket_open()
+    ls_ipaddr = is_valid_hostname(ls_hostname)
+    ls_binding = (ls_hostname, ls_portno)
+
+    msg_log = ''
 
     msg_in = ''
     msg_out = ''
-
+    
     data_in = ''
     data_out = ''
 
-    delimiter = ' '
+    if ls_ipaddr:
+        for elem in hostname_list:
+            queried_hostname = elem
+            
+            ## log queried_hostname
+            msg_log = 'Querying hostname \'{}{}{}\'...'.format(K.color.bold.WHT, queried_hostname, K.NRM)
+            log(logstat.LOG, funcname(), msg_log)
 
-    """
-        Opening datagram (UDP) client socket
-    """
-    try:
-        cl_sock_ls = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    except EnvironmentError:
-        print('[client]: ERROR - client socket open error.\n')
-        exit()
+            ## log outgoing data to LS
+            msg_log = logstr(ls_hostname, ls_ipaddr, queried_hostname)
+            log(logstat.OUT, funcname(), msg_log)
 
-    cl_sock_ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            ## send outgoing data to LS
+            ls_sock.sendto(queried_hostname.encode('utf-8'), ls_binding)
 
-    print('[client]: Opened new datagram socket.\n')
+            ## receive incoming data from LS
+            data_in = ls_sock.recv(128)
+            msg_in = data_in.decode('utf-8')
 
-    ls_binding = (ls_hostname, ls_portno)
+            ## log incoming data
+            msg_log = logstr(ls_hostname, ls_ipaddr, msg_in)
+            log(logstat.IN, funcname(), msg_log)
 
-    try:
-        socket.gethostbyname(ls_hostname)
-        cl_sock_ls.connect(ls_binding)
-    except EnvironmentError:
-        print('[client]: ERROR - unable to connect to LS server \'{}\'\n'.format(ls_hostname))
-        exit()
-
-    client_hostname = socket.gethostname()
-    client_ipaddr = socket.gethostbyname(client_hostname)
-
-    print('[client]: Client hostname is \'{}\'.'.format(client_hostname))
-    print('[client]: Client IP address is \'{}\'.\n'.format(client_ipaddr))
+            ## log append of incoming data to resolved_list
+            msg_log = 'Appending \'{}{}{}\' to resolved_list.'.format(K.color.bold.WHT, msg_in, K.NRM)
+            log(logstat.LOG, funcname(), msg_log)
+            
+            ## append incoming data to resolved list
+            resolved_list.append(msg_in)
+            print('')
     
-    """
-        Begin routine
-    """
-    ## think about this:
-    ## send entire hostname_list, message by message, to LS,
-    ## then, receive all replies from LS. LS will then send '__DONE__' flag
-
-    for elem in hostname_list:
-        queried_hostname = elem
-
-        print('{}\n[client]: Querying hostname \'{}\'...\n{}\n'.format(CHAIN_LINK, queried_hostname, CHAIN_LINK))
-
-        ls_ipaddr = socket.gethostbyname(ls_hostname)
-
-        msg_out = queried_hostname
-        data_out = msg_out.encode('utf-8')
-        cl_sock_ls.send(data_out)
-        print('[client]: outgoing to LS server \'{}\' at \'{}\': \'{}\''.format(ls_hostname, ls_ipaddr, queried_hostname))
-        
-        try:
-            data_in = cl_sock_ls.recv(DEFAULT_BUFFER_SIZE)
-        except EnvironmentError:
-            print('[client]: ERROR - LS server by hostname \'{}\' not available.'.format(ls_binding[0]))
-            return resolved_list
-
-        msg_in = data_in.decode('utf-8')
-        print('[client]: incoming from LS server \'{}\' at \'{}\': \'{}\''.format(ls_hostname, ls_ipaddr, msg_in))
-
-        resolved_list.append(msg_in)
-
     return resolved_list
 
 def main(argv):
@@ -210,18 +168,15 @@ def main(argv):
     output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
 
     hostname_list = []
-    resolved_list = []
 
-    len_hostname_list = -1
-
-    ### debugging args
+    ## debugging args
     if arg_length is 1:
         ls_hostname = DEFAULT_HOSTNAME_LS
         ls_portno = DEFAULT_PORTNO_LS
     elif arg_length is 2:
         ls_hostname = argv[1]
         ls_portno = DEFAULT_PORTNO_LS
-    ### end debugging args
+    ## end debugging args
     elif arg_length is 3:
         ls_hostname = argv[1]
         ls_portno = argv[2]
@@ -241,14 +196,21 @@ def main(argv):
         exit()
 
     print('')
+
+    ## read the input file into a list
     hostname_list = file_to_list(input_file_str)
-    len_hostname_list = len(hostname_list)
-    
-    if len_hostname_list > 0:
+
+    if len(hostname_list) > 0:
+        ## if the hostname list has at least one element, proceed to LS server.
         resolved_list = query_ls(ls_hostname, ls_portno, hostname_list)
-        write_to_file_from_list(output_file_str, resolved_list, 'w')
-        
-    print('')
+
+        ## if the resolved_list has at least one element, write to file.
+        if len(resolved_list) > 0:
+            write_to_file_from_list(output_file_str, resolved_list, 'w')
+    else:
+        ## if the hostname list is empty, notify the user.
+        log(logstat.ERR, funcname(), 'No data was read from \'{}{}{}\'.\n'.format(K.color.bold.WHT, input_file_str, K.NRM))
+
     return EX_OK
 
 if __name__ == '__main__':
