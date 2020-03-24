@@ -105,7 +105,7 @@ def query_ls(ls_hostname, ls_portno, hostname_list):
     
     data_in = ''
     data_out = ''
-
+    
     if ls_ipaddr:
         for elem in hostname_list:
             queried_hostname = elem
@@ -136,7 +136,7 @@ def query_ls(ls_hostname, ls_portno, hostname_list):
             ## append incoming data to resolved list
             resolved_list.append(msg_in)
             print('')
-    
+
     return resolved_list
 
 def main(argv):
@@ -203,7 +203,7 @@ def main(argv):
     if len(hostname_list) > 0:
         ## if the hostname list has at least one element, proceed to LS server.
         resolved_list = query_ls(ls_hostname, ls_portno, hostname_list)
-
+        
         ## if the resolved_list has at least one element, write to file.
         if len(resolved_list) > 0:
             write_to_file_from_list(output_file_str, resolved_list, 'w')

@@ -101,8 +101,10 @@ def start_ts2(ts2_portno, table):
         data_in, (ls_ipaddr, ls_portno) = ts2_sock.recvfrom(128)
         ls_binding = (ls_ipaddr, ls_portno)
 
+        ## retrieve ls_hostname from ls_ipaddr
         ls_hostname = socket.gethostbyaddr(ls_ipaddr)[0]
 
+        ## decode incoming data
         msg_in = data_in.decode('utf-8')
         queried_hostname = msg_in
 

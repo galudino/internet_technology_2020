@@ -1,4 +1,6 @@
 import network
+from network import udp_socket_open
+from network import is_valid_hostname
 import utils
 
 import socket
@@ -17,46 +19,28 @@ from utils import logstr
 
 from dns_module import DNS_table
 
-def main(argv):
-    ## Do this for each incoming or outgoing message
-    hostname = 'pwd.cs.rutgers.edu'
-    ipaddr = '192.153.2.1'
-    message = 'message to you, read me!'
+import select
 
-    
-    """
-    s = log(logstat.IN, funcname(), '({} : {}) {}'.format(hostname, ipaddr, message))
-    """
-    
-    log(logstat.OUT, funcname(), logstr(hostname, ipaddr, message))
+def start_ls(ls_portno, ts1_hostname, ts1_portno, ts2_hostname, ts2_portno):
+    ls_binding = ('', ls_portno)
 
-    l = utils.file_to_list('PROJ2-HNS.txt')
+    ls_sock = network.udp_socket_open()
+    ls_sock.bind(ls_binding)
 
-    utils.write_to_file_from_list('out.txt', l, 'w')
+    ts1_sock = udp_socket_open()
+    ts1_ipaddr = is_valid_hostname(ts1_hostname)
+    ts1_binding = (ts1_hostname, ts1_portno)
 
-    table = DNS_table()
-    table.append_from_str('amazon.com 1923.1 A')
-    table.has_hostname('google.com')
-    table.has_hostname('googloe.com')
-    return EX_OK
+    ts2_sock = udp_socket_open()
+    ts2_ipaddr = is_valid_hostname(ts2_hostname)
+    ts2_binding = (ts2_hostname, ts2_portno)
 
-if __name__ == '__main__':
-    retval = main(argv)
+    ts_sockets = [ts1_sock, ts2_sock]
+    resolved_sockets = []
 
-
-"""
-def query_ls(ls_hostname, ls_portno, hostname_list):
-
-    client_ipaddr = ''
-    client_hostname = ''
-
-    cl_sock_ls = 0
-
-    ls_ipaddr = ''
-    ls_binding = ('', '')
-
-    resolved_list = []
     queried_hostname = ''
+
+    msg_log = ''
 
     msg_in = ''
     msg_out = ''
@@ -64,61 +48,88 @@ def query_ls(ls_hostname, ls_portno, hostname_list):
     data_in = ''
     data_out = ''
 
-    delimiter = ' '
+    timeout_val = 1.0
 
+    ## set ts sockets as non-blocking
+    ts1_sock.setblocking(False)
+    ts2_sock.setblocking(False)
 
-    try:
-        cl_sock_ls = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    except EnvironmentError:
-        print('[client]: ERROR - client socket open error.\n')
-        exit()
+    while True:
+        ## receive incoming data from client
+        data_in, (client_ipaddr, client_portno) = ls_sock.recvfrom(128)
+        client_binding = (client_ipaddr, client_portno)
 
-    cl_sock_ls.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        ## retrieve client hostname from client_ipaddr
+        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
 
-    print('[client]: Opened new datagram socket.\n')
-
-    ls_binding = (ls_hostname, ls_portno)
-
-    try:
-        socket.gethostbyname(ls_hostname)
-        cl_sock_ls.connect(ls_binding)
-    except EnvironmentError:
-        print('[client]: ERROR - unable to connect to LS server \'{}\'\n'.format(ls_hostname))
-        exit()
-
-    client_hostname = socket.gethostname()
-    client_ipaddr = socket.gethostbyname(client_hostname)
-
-    print('[client]: Client hostname is \'{}\'.'.format(client_hostname))
-    print('[client]: Client IP address is \'{}\'.\n'.format(client_ipaddr))
-    
-
-    ## think about this:
-    ## send entire hostname_list, message by message, to LS,
-    ## then, receive all replies from LS. LS will then send '__DONE__' flag
-
-    for elem in hostname_list:
-        queried_hostname = elem
-
-        print('{}\n[client]: Querying hostname \'{}\'...\n{}\n'.format(CHAIN_LINK, queried_hostname, CHAIN_LINK))
-
-        ls_ipaddr = socket.gethostbyname(ls_hostname)
-
-        msg_out = queried_hostname
-        data_out = msg_out.encode('utf-8')
-        cl_sock_ls.send(data_out)
-        print('[client]: outgoing to LS server \'{}\' at \'{}\': \'{}\''.format(ls_hostname, ls_ipaddr, queried_hostname))
-        
-        try:
-            data_in = cl_sock_ls.recv(DEFAULT_BUFFER_SIZE)
-        except EnvironmentError:
-            print('[client]: ERROR - LS server by hostname \'{}\' not available.'.format(ls_binding[0]))
-            return resolved_list
-
+        ## decode incoming data
         msg_in = data_in.decode('utf-8')
-        print('[client]: incoming from LS server \'{}\' at \'{}\': \'{}\''.format(ls_hostname, ls_ipaddr, msg_in))
+        queried_hostname = msg_in
 
-        resolved_list.append(msg_in)
+        ## log incoming data
+        msg_log = logstr(client_hostname, client_ipaddr, queried_hostname)
+        log(logstat.IN, funcname(), msg_log)
 
-    return resolved_list
-"""
+        ## log outgoing data to TS1
+        msg_log = logstr(ts1_hostname, ts1_ipaddr, queried_hostname)
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to TS1
+        ts1_sock.sendto(queried_hostname.encode('utf-8'), ts1_binding)
+
+        ## log outgoing data to TS2
+        msg_log = logstr(ts2_hostname, ts2_ipaddr, queried_hostname)
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to TS2
+        ts2_sock.sendto(queried_hostname.encode('utf-8'), ts2_binding)
+
+        ## use select with timeout_val to determine which socket to recv from
+        resolved_sockets, _, _ = select.select(ts_sockets, [], [], timeout_val)
+    
+        if resolved_sockets:
+            for ts in resolved_sockets:
+                ## receive incoming data from TS socket
+                data_in = ts.recv(128)
+                msg_in = data_in.decode('utf-8')
+
+                ## consolidated code for logging
+                hostname = ''
+                ipaddr = ''
+                
+                if ts is ts1_sock:
+                    hostname = ts1_hostname
+                    ipaddr = ts1_ipaddr
+                elif ts is ts2_sock:
+                    hostname = ts2_hostname
+
+                ## log incoming data from TS socket
+                msg_log = logstr(hostname, ipaddr, msg_in)
+                log(logstat.IN, funcname(), msg_log)
+
+                ## data from TS socket will be sent to client shortly
+                msg_out = msg_in
+        else:
+            ## log connection timeout
+            msg_log = '[Connection timeout]'
+            log(logstat.LOG, funcname(), msg_log)
+
+            ## prepare 'HOST NOT FOUND' message for client
+            msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
+
+        ## log outgoing data to client
+        msg_log = logstr(client_hostname, client_ipaddr, msg_out)
+        log(logstat.OUT, funcname(), msg_log)
+
+        ## send outgoing data to client
+        ls_sock.sendto(msg_out.encode('utf-8'), client_binding)
+
+        print('')    
+
+def main(argv):
+    start_ls(8345, 'cp.cs.rutgers.edu', 50007, 'kill.cs.rutgers.edu', 50009)
+    return EX_OK
+
+if __name__ == '__main__':
+    retval = main(argv)
+
