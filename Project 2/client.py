@@ -50,6 +50,14 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from os import EX_OK
+from os import path
+from sys import argv
+from sys import stdout
+from enum import Enum
+from time import sleep
+from socket import timeout
+
 from utils import file_to_list
 from utils import str_to_list
 from utils import write_to_file_from_list
@@ -59,6 +67,7 @@ from utils import log
 from utils import funcname
 from utils import logstr
 
+from network import BUFFER_SIZE
 from network import udp_socket_open
 from network import is_valid_hostname
 
@@ -66,22 +75,10 @@ from dns_module import DNS_table
 
 from ls import DEFAULT_PORTNO_LS
 
-from os import EX_OK
-from os import path
-from sys import argv
-from enum import Enum
-
 DEFAULT_INPUT_FILE_STR_HNS = 'PROJ2-HNS.txt'
 DEFAULT_OUTPUT_FILE_STR_RESOLVED = 'RESOLVED.txt'
 
 DEFAULT_HOSTNAME_LS = 'pwd.cs.rutgers.edu'
-
-DEFAULT_BUFFER_SIZE = 128
-
-import socket
-import threading
-import time
-import random
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -91,53 +88,121 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def query_ls(ls_hostname, ls_portno, hostname_list):
-    resolved_list = []
+def query_ls(ls_info, hostname_list):
+    """(TODO)
 
-    ls_sock = udp_socket_open()
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
+    ls_hostname = ls_info[0]
+    ls_portno = ls_info[1]
+
     ls_ipaddr = is_valid_hostname(ls_hostname)
     ls_binding = (ls_hostname, ls_portno)
 
-    msg_log = ''
+    timeout_val = 10.0
 
-    msg_in = ''
-    msg_out = ''
-    
-    data_in = ''
-    data_out = ''
-    
+    ls_sock = udp_socket_open()
+    ls_sock.settimeout(timeout_val)
+
+    resolved_list = []
+
     if ls_ipaddr:
-        for elem in hostname_list:
-            queried_hostname = elem
-            
-            ## log queried_hostname
-            msg_log = 'Querying hostname \'{}{}{}\'...'.format(K.color.bold.WHT, queried_hostname, K.NRM)
+        # if ls_hostname yields a valid ip address
+        data_in = ''
+        msg_in = ''
+        
+        msg_log = ''
+
+        for query in hostname_list:       
+            # log query
+            msg_log = 'Querying hostname \'{}{}{}\'...'.format(K.color.bold.WHT, query, K.NRM)
             log(logstat.LOG, funcname(), msg_log)
 
-            ## log outgoing data to LS
-            msg_log = logstr(ls_hostname, ls_ipaddr, queried_hostname)
+            # send encoded query to LS
+            ls_sock.sendto(query.encode('utf-8'), ls_binding)
+
+            msg_log = logstr(ls_hostname, ls_ipaddr, query)
             log(logstat.OUT, funcname(), msg_log)
+            
+            # upon the next recv call,
+            # we are expecting the query results from LS
 
-            ## send outgoing data to LS
-            ls_sock.sendto(queried_hostname.encode('utf-8'), ls_binding)
+            # receive data from LS, decode it
+            try:
+                data_in = ls_sock.recv(BUFFER_SIZE)
+            except timeout:
+                # LS is given a maximum of 10 sec to respond --
+                # since TS1 and TS2 have a max of 5 secs to respond,
+                # RTT must be accounted for
+                msg_log = '[Connection timeout]'
+                log(logstat.LOG, funcname(), msg_log + '\n')
+                continue
 
-            ## receive incoming data from LS
-            data_in = ls_sock.recv(128)
             msg_in = data_in.decode('utf-8')
 
-            ## log incoming data
             msg_log = logstr(ls_hostname, ls_ipaddr, msg_in)
             log(logstat.IN, funcname(), msg_log)
 
-            ## log append of incoming data to resolved_list
-            msg_log = 'Appending \'{}{}{}\' to resolved_list.'.format(K.color.bold.WHT, msg_in, K.NRM)
-            log(logstat.LOG, funcname(), msg_log)
-            
-            ## append incoming data to resolved list
+            # append query result to resolved_list
             resolved_list.append(msg_in)
+
+            msg_log = 'Added \'{}{}{}\' to resolved_list.'.format(K.color.bold.WHT, msg_in, K.NRM)
+            log(logstat.LOG, funcname(), msg_log)
+
             print('')
 
     return resolved_list
+
+def check_args(argv):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
+    arg_length = len(argv)
+
+    usage_str = '\nUSAGE:\npython {} [ls_hostname] [ls_listen_port]\npython {} [ls_hostname] [ls_listen_port] [input_file_name]\npython {} [ls_hostname] [ls_listen_port] [input_file_name] [output_file_name]\n'.format(argv[0], argv[0], argv[0])
+
+    ls_hostname = DEFAULT_HOSTNAME_LS
+    ls_portno = DEFAULT_PORTNO_LS
+
+    input_file_str = DEFAULT_INPUT_FILE_STR_HNS
+    output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
+
+    # debugging args
+    if arg_length is 1:
+        pass
+    elif arg_length is 2:
+        ls_hostname = argv[1]
+    # end debugging args
+    elif arg_length is 3:
+        ls_hostname = argv[1]
+        ls_portno = int(argv[2])
+    elif arg_length is 4:
+        ls_hostname = argv[1]
+        ls_portno = int(argv[2])
+
+        input_file_str = argv[3]
+    elif arg_length is 5:
+        ls_hostname = argv[1]
+        ls_portno = int(argv[2])
+
+        input_file_str = argv[3]
+        output_file_str = argv[4]
+    else:
+        print(usage_str)
+        exit()
+
+    return (ls_hostname, ls_portno), (input_file_str, output_file_str)
 
 def main(argv):
     """Main function, where client function is called
@@ -157,64 +222,30 @@ def main(argv):
         Raises:
             (none)
     """
-    arg_length = len(argv)
+    (ls_info, file_str) = check_args(argv)
+    # ls_info[0] is LS's hostname
+    # ls_info[1] is LS's port number
 
-    usage_str = '\nUSAGE:\npython {} [ls_hostname] [ls_listen_port]\npython {} [ls_hostname] [ls_listen_port] [input_file_name]\npython {} [ls_hostname] [ls_listen_port] [input_file_name] [output_file_name]\n'.format(argv[0], argv[0], argv[0])
-
-    ls_hostname = ''
-    ls_portno = ''
-
-    input_file_str = DEFAULT_INPUT_FILE_STR_HNS
-    output_file_str = DEFAULT_OUTPUT_FILE_STR_RESOLVED
-
-    hostname_list = []
-
-    ## debugging args
-    if arg_length is 1:
-        ls_hostname = DEFAULT_HOSTNAME_LS
-        ls_portno = DEFAULT_PORTNO_LS
-    elif arg_length is 2:
-        ls_hostname = argv[1]
-        ls_portno = DEFAULT_PORTNO_LS
-    ## end debugging args
-    elif arg_length is 3:
-        ls_hostname = argv[1]
-        ls_portno = argv[2]
-    elif arg_length is 4:
-        ls_hostname = argv[1]
-        ls_portno = argv[2]
-
-        input_file_str = argv[3]
-    elif arg_length is 5:
-        ls_portno = argv[1]
-        ls_portno = argv[2]
-
-        input_file_str = argv[3]
-        output_file_str = argv[4]
-    else:
-        print(usage_str)
-        exit()
-
+    # file_str[0] is the query input file string
+    # file_str[1] is the query output file string
     print('')
 
-    ## read the input file into a list
-    hostname_list = file_to_list(input_file_str)
+    # read the input file into a list
+    hostname_list = file_to_list(file_str[0])
 
     if len(hostname_list) > 0:
-        ## if the hostname list has at least one element, proceed to LS server.
-        resolved_list = query_ls(ls_hostname, ls_portno, hostname_list)
+        # if the hostname list has at least one element, proceed to LS server
+        resolved_list = query_ls(ls_info, hostname_list)
         
-        ## if the resolved_list has at least one element, write to file.
         if len(resolved_list) > 0:
-            write_to_file_from_list(output_file_str, resolved_list, 'w')
+            # if the resolved_list has at least one element, write to file
+            write_to_file_from_list(file_str[1], resolved_list, 'w')
     else:
-        ## if the hostname list is empty, notify the user.
-        log(logstat.ERR, funcname(), 'No data was read from \'{}{}{}\'.\n'.format(K.color.bold.WHT, input_file_str, K.NRM))
+        # if the hostname list is empty, notify the user
+        log(logstat.ERR, funcname(), 'No data was read from \'{}{}{}\'.\n'.format(K.color.bold.WHT, file_str[0], K.NRM))
 
     return EX_OK
 
 if __name__ == '__main__':
-    """
-        Program execution begins here.
-    """
+    # Program execution begins here.
     retval = main(argv)

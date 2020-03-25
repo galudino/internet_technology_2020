@@ -11,18 +11,18 @@
     Assignment synopsis:
         In project 2, we will explore a design that implements load balancing among DNS servers by splitting the set of hostnames across multiple DNS servers.
 
-        You will change the root server from project 1, RS, into a load-balancing server LS, that interacts with two top-level domain servers, TS1 and TS2. Only the TS servers store mappings from hostnames to IP addresses; the LS does not. 
+        You will change the root server from project 1, RS, into a load-balancing server LS, that interacts with two top-level domain servers, ts2 and TS2. Only the TS servers store mappings from hostnames to IP addresses; the LS does not. 
         
         Further, the mappings stored by the TS servers do not overlap with each other; as a result, AT MOST ONE of the two TS servers will send a response to LS. 
         
-        Overall, you will have four programs: the client, the load-balancing server (LS), and two DNS servers (TS1 and TS2).
+        Overall, you will have four programs: the client, the load-balancing server (LS), and two DNS servers (ts2 and TS2).
 
         Each query proceeds as follows. 
-        The client program makes the query (in the form of a hostname) to the LS. LS then forwards the query to _both_ TS1 and TS2. 
+        The client program makes the query (in the form of a hostname) to the LS. LS then forwards the query to _both_ ts2 and TS2. 
     
-        However, at most one of TS1 and TS2 contain the IP address for this hostname. Only when a TS server contains a mapping will it respond to LS; otherwise, that TS sends nothing back.
+        However, at most one of ts2 and TS2 contain the IP address for this hostname. Only when a TS server contains a mapping will it respond to LS; otherwise, that TS sends nothing back.
 
-        There are three possibilities. Either (1) LS receives a response from TS1, or (2) LS receives a response from TS2, or (3) LS receives no response from either TS1 or TS2 within a fixed timeout interval (see details below).
+        There are three possibilities. Either (1) LS receives a response from ts2, or (2) LS receives a response from TS2, or (3) LS receives no response from either ts2 or TS2 within a fixed timeout interval (see details below).
         
         If the LS receives a response (cases (1) and (2) above), it forwards the response as is to the client. If it times out waiting for a response (case 3) it sends an error string to the client. More details will follow.
         
@@ -52,6 +52,7 @@
 
 from os import EX_OK
 from sys import argv
+from socket import gethostbyaddr
 
 from utils import K
 from utils import logstat
@@ -59,6 +60,7 @@ from utils import log
 from utils import funcname
 from utils import logstr
 
+from network import BUFFER_SIZE
 from network import udp_socket_open
 from network import is_valid_hostname
 
@@ -66,11 +68,6 @@ from dns_module import DNS_table
 
 DEFAULT_INPUT_FILE_STR_TS2 = "PROJ2-DNSTS2.txt"
 DEFAULT_PORTNO_TS2 = 50009
-
-import socket
-import threading
-import time
-import random
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -81,69 +78,70 @@ __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
 def start_ts2(ts2_portno, table):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
     ts2_binding = ('', ts2_portno)
 
     ts2_sock = udp_socket_open()
     ts2_sock.bind(ts2_binding)
 
-    queried_hostname = ''
-
-    msg_log = ''
-
-    msg_in = ''
-    msg_out = ''
+    query = ''
 
     data_in = ''
     data_out = ''
 
+    msg_out = ''
+
+    msg_log = ''
+
     while True:
-        ## receive incoming data from LS
-        data_in, (ls_ipaddr, ls_portno) = ts2_sock.recvfrom(128)
+        # receive data from LS, decode for logging
+        data_in, (ls_ipaddr, ls_portno) = ts2_sock.recvfrom(BUFFER_SIZE)
         ls_binding = (ls_ipaddr, ls_portno)
+        query = data_in.decode('utf-8')
+    
+        # retrieve ls_hostname from ls_ipaddr
+        ls_hostname = gethostbyaddr(ls_ipaddr)[0]
 
-        ## retrieve ls_hostname from ls_ipaddr
-        ls_hostname = socket.gethostbyaddr(ls_ipaddr)[0]
-
-        ## decode incoming data
-        msg_in = data_in.decode('utf-8')
-        queried_hostname = msg_in
-
-        ## log incoming data
-        msg_log = logstr(ls_hostname, ls_ipaddr, queried_hostname)
+        msg_log = logstr(ls_hostname, ls_ipaddr, query)
         log(logstat.IN, funcname(), msg_log)
 
-        ## search table for queried_hostname
-        if table.has_hostname(queried_hostname):
-            ## if queried_hostname is resolved, reply to LS
+        # search table for query
+        if table.has_hostname(query):
+            # if query is resolved, reply to LS
             
-            ## prepare outgoing data to LS
-            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+            # prepare outgoing data to LS
+            msg_out = '{} {} {}'.format(query, table.ipaddr(query), table.flagtype(query))
 
-            ## log outgoing data to LS
+            # send outgoing data to LS
+            data_out = msg_out.encode('utf-8')
+            ts2_sock.sendto(data_out, ls_binding)
+
+            # log outgoing data to LS
             msg_log = logstr(ls_hostname, ls_ipaddr, msg_out)
             log(logstat.OUT, funcname(), msg_log)
-
-            ## send outgoing data to LS
-            ts2_sock.sendto(msg_out.encode('utf-8'), ls_binding)
         else:
-            ## if queried_hostname is not resolved, log to stdout
+            # if query is not resolved, notify user
             log(logstat.LOG, funcname(), 'No outgoing data will be sent for this query.')
 
-        print('')  
-
-def main(argv):
-    """Main function, where client function is called
+        print('')
+            
+def check_args(argv):
+    """(TODO)
 
         Args:
-            Command line arguments (as per sys.argv)
-                argv[1] - ts2_listen_port
-                    desired port number for TS2 program
-                argv[2] - input_file (OPTIONAL)
-                    desired name of input file of entries for TS2 program
+            (TODO)
         Returns:
-            Exit status, by default, 0 upon exit
+            (TODO)
         Raises:
-            (none)
+            (TODO)
     """
     arg_length = len(argv)
 
@@ -151,17 +149,14 @@ def main(argv):
 
     ts2_portno = DEFAULT_PORTNO_TS2
 
-    input_file_str = '__NONE__'
-    table = {}
+    input_file_str = DEFAULT_INPUT_FILE_STR_TS2
 
-    ### debugging args
+    # debugging args
     if arg_length is 1:
-        ts2_portno = DEFAULT_PORTNO_TS2
-        input_file_str = DEFAULT_INPUT_FILE_STR_TS2
-    ### end debugging args
+        pass
+    # end debugging args
     elif arg_length is 2:
         ts2_portno = int(argv[1])
-        input_file_str = DEFAULT_INPUT_FILE_STR_TS2
     elif arg_length is 3:
         ts2_portno = int(argv[1])
         input_file_str = argv[2]
@@ -169,8 +164,25 @@ def main(argv):
         print(usage_str)
         exit()
 
-    print('')
+    return (ts2_portno, input_file_str)
 
+def main(argv):
+    """Main function, where client function is called
+
+        Args:
+            Command line arguments (as per sys.argv)
+                argv[1] - ts2_listen_port
+                    desired port number for ts2 program
+                argv[2] - input_file (OPTIONAL)
+                    desired name of input file of entries for ts2 program
+        Returns:
+            Exit status, by default, 0 upon exit
+        Raises:
+            (none)
+    """
+    (ts2_portno, input_file_str) = check_args(argv)
+    print('')
+    
     table = DNS_table()
     table.append_from_file(input_file_str)
 
@@ -179,7 +191,5 @@ def main(argv):
     return EX_OK
 
 if __name__ == '__main__':
-    """
-        Program execution begins here.
-    """
+    # Program execution begins here.
     retval = main(argv)

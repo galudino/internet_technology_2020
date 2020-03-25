@@ -51,16 +51,21 @@
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-import socket
-import threading
-import time
-import random
+from socket import socket
+from socket import AF_INET
+from socket import SOCK_DGRAM
+from socket import SOL_SOCKET
+from socket import SO_REUSEADDR
+from socket import gethostname
+from socket import gethostbyname
 
 from utils import K
 from utils import logstat
 from utils import log
 from utils import funcname
 from utils import logstr
+
+BUFFER_SIZE = 256
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -71,24 +76,33 @@ __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
 def udp_socket_open():
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
     sock = 0
     msg = ''
 
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock = socket(AF_INET, SOCK_DGRAM)
     except EnvironmentError:
         msg = 'Socket open error.\n'
         log(logstat.ERR, funcname(), msg)
 
         exit()
 
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     msg = 'Opened new datagram socket.\n'
     log(logstat.OK, funcname(), msg)
 
-    hostname = socket.gethostname()
-    ipaddr = socket.gethostbyname(hostname)
+    hostname = gethostname()
+    ipaddr = gethostbyname(hostname)
 
     msg = 'Hostname is \'{}{}{}\'.'.format(K.color.bold.WHT, hostname, K.NRM)
     log(logstat.LOG, funcname(), msg)
@@ -99,8 +113,17 @@ def udp_socket_open():
     return sock
 
 def is_valid_hostname(hostname):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
     try:
-        ipaddr = socket.gethostbyname(hostname)
+        ipaddr = gethostbyname(hostname)
     except EnvironmentError:
         msg = 'Host by name \'{}{}{}\' is not available.\n'.format(K.color.bold.WHT, ls_hostname, K.NRM)
         log(logstat.ERR, funcname(), msg)
@@ -112,87 +135,3 @@ def is_valid_hostname(hostname):
     log(logstat.OK, funcname(), msg)
 
     return ipaddr
-        
-
-"""
-class Socket:
-    m_sock = 0
-    m_hostname = ''
-    m_portno = 0
-
-    def __init__(self, hostname, portno):
-        try:
-            socket.gethostbyname(hostname)
-        except EnvironmentError:
-            print('[network]: \'{}\' is not a valid hostname.\n'.format(hostname))
-            exit()
-        
-        self.m_hostname = hostname
-        self.m_portno = portno
-
-class UDPSocket(Socket):
-    def __init__(self, hostname, portno):
-        Socket.__init__(self, hostname, portno)
-
-        try:
-            m_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        except EnvironmentError:
-            print('[network]: ERROR - UDP socket open error.\n')
-            exit()
-        
-        m_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print('[network]: Opened new datagram socket.\n')
-
-    def bind(self):
-        server_hostname = ''
-        server_ipaddr = ''
-
-        binding = (self.m_hostname, self.m_portno)
-        
-        self.m_sock.bind(binding)
-
-        server_hostname = socket.gethostname()
-        server_ipaddr = socket.gethostbyname(server_hostname)
-
-        print('[network]: Server hostname is \'{}\'.'.format((server_hostname)))
-        print('[network]: Server IP address is \'{}\'.\n'.format(server_ipaddr))
-
-    def connect(self):
-        client_hostname = ''
-        client_portno = 0
-        
-        binding = (self.m_hostname, self.m_portno)
-
-        try:
-            self.m_sock.connect(binding)
-        except EnvironmentError:
-            print('[network]: ERROR - unable to connect to server \'{}\'\n'.format(self.m_hostname))
-            exit()
-
-        client_hostname = socket.gethostname()
-        client_ipaddr = socket.gethostbyname(client_hostname)
-
-        print('[network]: Client hostname is \'{}\'.'.format(client_hostname))
-        print('[network]: Client IP address is \'{}\'.\n'.format(client_ipaddr))
-
-    def start_client(self, func, func_args):
-        return func(self.m_sock, func_args)
-
-    def start_server(self, func, func_args):
-        while True:
-            data_in, (client_ipaddr, client_portno) = self.m_sock.recvfrom(128)
-            client_binding = (client_ipaddr, client_portno)
-
-            client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
-
-            msg_in = data_in.decode('utf-8')
-
-            print('[network]: incoming from client \'{}\' at \'{}\': \'{}\''.format(client_hostname, client_ipaddr, msg_in))
-
-            data_out = func(func_args, msg_in)
-
-            data_out = msg_out.encode('utf-8')
-            self.m_sock.sendto(data_out, client_binding)
-
-        print('[RS]: outgoing to client \'{}\' at \'{}\': \'{}\'\n'.format(client_hostname, client_ipaddr, msg_out))
-"""

@@ -52,6 +52,11 @@
 
 from os import EX_OK
 from sys import argv
+from sys import stdout
+from time import sleep
+from socket import gethostbyaddr
+from socket import gethostbyname
+from select import select
 
 from utils import K
 from utils import logstat
@@ -59,6 +64,7 @@ from utils import log
 from utils import funcname
 from utils import logstr
 
+from network import BUFFER_SIZE
 from network import udp_socket_open
 from network import is_valid_hostname
 
@@ -72,12 +78,6 @@ DEFAULT_PORTNO_LS = 8345
 DEFAULT_HOSTNAME_TS1 = "cp.cs.rutgers.edu"
 DEFAULT_HOSTNAME_TS2 = "kill.cs.rutgers.edu"
 
-import socket
-import threading
-import time
-import random
-import select
-
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
 __date__ = "06 Apr 2020"
@@ -86,112 +86,182 @@ __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
-def start_ls(ls_portno, ts1_hostname, ts1_portno, ts2_hostname, ts2_portno):
+def start_ls(ls_portno, ts1_info, ts2_info):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
+    ts1_hostname = ts1_info[0]
+    ts1_portno = ts1_info[1]
+
+    ts2_hostname = ts2_info[0]
+    ts2_portno = ts2_info[1]
+
     ls_binding = ('', ls_portno)
 
     ls_sock = udp_socket_open()
     ls_sock.bind(ls_binding)
 
-    ts1_sock = udp_socket_open()
     ts1_ipaddr = is_valid_hostname(ts1_hostname)
     ts1_binding = (ts1_hostname, ts1_portno)
 
-    ts2_sock = udp_socket_open()
+    ts1_sock = udp_socket_open()
+    ts1_sock.setblocking(False)
+
     ts2_ipaddr = is_valid_hostname(ts2_hostname)
     ts2_binding = (ts2_hostname, ts2_portno)
+
+    ts2_sock = udp_socket_open()
+    ts2_sock.setblocking(False)
 
     ts_sockets = [ts1_sock, ts2_sock]
     resolved_sockets = []
 
-    queried_hostname = ''
-
-    msg_log = ''
-
-    msg_in = ''
-    msg_out = ''
+    query = ''
 
     data_in = ''
     data_out = ''
 
-    timeout_val = 1.0
+    msg_in = ''
+    msg_out = ''
 
-    ## set ts sockets as non-blocking
-    ts1_sock.setblocking(False)
-    ts2_sock.setblocking(False)
+    msg_log = ''
+
+    timeout_val = 5.0
 
     while True:
-        ## receive incoming data from client
-        data_in, (client_ipaddr, client_portno) = ls_sock.recvfrom(128)
+        # receive data from client, decode for logging
+        (data_in, (client_ipaddr, client_portno)) = ls_sock.recvfrom(BUFFER_SIZE)
         client_binding = (client_ipaddr, client_portno)
+        query = data_in.decode('utf-8')
 
-        ## retrieve client hostname from client_ipaddr
-        client_hostname = socket.gethostbyaddr(client_ipaddr)[0]
+        # retrieve client hostname from client_ipaddr
+        client_hostname = gethostbyaddr(client_ipaddr)[0]
 
-        ## decode incoming data
-        msg_in = data_in.decode('utf-8')
-        queried_hostname = msg_in
-
-        ## log incoming data
-        msg_log = logstr(client_hostname, client_ipaddr, queried_hostname)
+        msg_log = logstr(client_hostname, client_ipaddr, query)
         log(logstat.IN, funcname(), msg_log)
 
-        ## log outgoing data to TS1
-        msg_log = logstr(ts1_hostname, ts1_ipaddr, queried_hostname)
+        # send data to TS1
+        ts1_sock.sendto(data_in, ts1_binding)
+
+        msg_log = logstr(ts1_hostname, ts1_ipaddr, query)
         log(logstat.OUT, funcname(), msg_log)
 
-        ## send outgoing data to TS1
-        ts1_sock.sendto(queried_hostname.encode('utf-8'), ts1_binding)
+        # send data to TS2
+        ts2_sock.sendto(data_in, ts2_binding)
 
-        ## log outgoing data to TS2
-        msg_log = logstr(ts2_hostname, ts2_ipaddr, queried_hostname)
+        msg_log = logstr(ts2_hostname, ts2_ipaddr, query)
         log(logstat.OUT, funcname(), msg_log)
 
-        ## send outgoing data to TS2
-        ts2_sock.sendto(queried_hostname.encode('utf-8'), ts2_binding)
+        # use select with timeout_val to determine which socket to recv from
+        resolved_sockets, _, _ = select(ts_sockets, [], [], timeout_val)
 
-        ## use select with timeout_val to determine which socket to recv from
-        resolved_sockets, _, _ = select.select(ts_sockets, [], [], timeout_val)
-    
         if resolved_sockets:
-            ## if ts1 or ts2 received data, we proceed here
+            # if TS1 or TS2 received data, we proceed here
             for ts in resolved_sockets:
-                ## receive incoming data from TS socket
-                data_in = ts.recv(128)
-                msg_in = data_in.decode('utf-8')
-
-                ## consolidated code for logging
                 hostname = ''
                 ipaddr = ''
                 
+                # receive incoming data from TS socket
+                # data received from TS socket will be sent to client
+                data_in = ts.recv(BUFFER_SIZE)
+                data_out = data_in
+
+                # decode message for logging
+                msg_in = data_in.decode('utf-8')
+                msg_out = msg_in
+
+                # log incoming data from TS socket
                 if ts is ts1_sock:
                     hostname = ts1_hostname
                     ipaddr = ts1_ipaddr
                 elif ts is ts2_sock:
                     hostname = ts2_hostname
+                    ipaddr = ts2_ipaddr
 
-                ## log incoming data from TS socket
                 msg_log = logstr(hostname, ipaddr, msg_in)
                 log(logstat.IN, funcname(), msg_log)
-
-                ## data from TS socket will be sent to client shortly
-                msg_out = msg_in
         else:
-            ## ts1 or ts2 will timeout after timeout_val seconds
+            # TS1 and TS2 did not receive data after timeout_val seconds, log it
             msg_log = '[Connection timeout]'
             log(logstat.LOG, funcname(), msg_log)
 
-            ## prepare 'HOST NOT FOUND' message for client
-            msg_out = '{} - {}'.format(queried_hostname, DNS_table.flag.HOST_NOT_FOUND.value)
+            # prepare 'HOST NOT FOUND' message for client
+            msg_out = '{} - {}'.format(query, DNS_table.flag.HOST_NOT_FOUND.value)
 
-        ## log outgoing data to client
+            # encode prepared message, will send to client shortly
+            data_out = msg_out.encode('utf-8')
+
+        # send outgoing data to client
+        ls_sock.sendto(data_out, client_binding)
+
         msg_log = logstr(client_hostname, client_ipaddr, msg_out)
         log(logstat.OUT, funcname(), msg_log)
 
-        ## send outgoing data to client
-        ls_sock.sendto(msg_out.encode('utf-8'), client_binding)
-
         print('')   
 
+def check_args(argv):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
+    arg_length = len(argv)
+
+    usage_str = '\nUSAGE:\npython {} [ls_listen_port] [ts1_hostname] [ts1_listen_port] [ts2_hostname] [ts2_listen_port]\n'.format(argv[0])
+
+    ls_portno = DEFAULT_PORTNO_LS
+
+    ts1_hostname = DEFAULT_HOSTNAME_TS1
+    ts2_hostname = DEFAULT_HOSTNAME_TS2
+
+    ts1_portno = DEFAULT_PORTNO_TS1
+    ts2_portno = DEFAULT_PORTNO_TS2
+
+    # debugging args
+    if arg_length is 1:
+        pass
+    elif arg_length is 2:
+        ls_portno = int(argv[1])
+    # end debugging args   
+    elif arg_length is 3:
+        ls_portno = int(argv[1])
+        ts1_hostname = argv[2]
+    elif arg_length is 4:
+        ls_portno = int(argv[1])
+
+        ts1_hostname = argv[2]
+        ts1_portno = int(argv[3])
+    elif arg_length is 5:
+        ls_portno = int(argv[1])
+
+        ts1_hostname = argv[2]
+        ts1_portno = int(argv[3])
+        
+        ts2_hostname = argv[4]
+    elif arg_length is 6:
+        ls_portno = int(argv[1])
+
+        ts1_hostname = argv[2]
+        ts1_portno = int(argv[3])
+        
+        ts2_hostname = argv[4]
+        ts2_portno = argv[5]
+    else:
+        print(usage_str)
+        exit()
+
+    return (ls_portno, (ts1_hostname, ts1_portno), (ts2_hostname, ts2_portno))
+    
 def main(argv):
     """Main function
 
@@ -208,79 +278,19 @@ def main(argv):
                 argv[5] - ts2_listen_port
                     port number for desired TS2 server, corresponds to ts2_hostname
     """
-    arg_length = len(argv)
 
-    usage_str = '\nUSAGE:\npython {} [ls_listen_port] [ts1_hostname] [ts1_listen_port] [ts2_hostname] [ts2_listen_port]\n'.format(argv[0])
-
-    ls_portno = 0
-
-    ts1_hostname = ''
-    ts2_hostname = ''
-
-    ts1_portno = 0
-    ts2_portno = 0
-
-    if arg_length is 1:
-        ls_portno = DEFAULT_PORTNO_LS
-
-        ts1_hostname = DEFAULT_HOSTNAME_TS1
-        ts1_portno = DEFAULT_PORTNO_TS1
-
-        ts2_hostname = DEFAULT_HOSTNAME_TS2
-        ts2_portno = DEFAULT_PORTNO_TS2
-    elif arg_length is 2:
-        ls_portno = int(argv[1])
-
-        ts1_hostname = DEFAULT_HOSTNAME_TS1
-        ts1_portno = DEFAULT_PORTNO_TS1
-
-        ts2_hostname = DEFAULT_HOSTNAME_TS2
-        ts2_portno = DEFAULT_PORTNO_TS2        
-    elif arg_length is 3:
-        ls_portno = int(argv[1])
-
-        ts1_hostname = argv[2]
-        ts1_portno = DEFAULT_PORTNO_TS1
-
-        ts2_hostname = DEFAULT_HOSTNAME_TS2
-        ts2_portno = DEFAULT_PORTNO_TS2
-    elif arg_length is 4:
-        ls_portno = int(argv[1])
-
-        ts1_hostname = argv[2]
-        ts1_portno = int(argv[3])
-        
-        ts2_hostname = DEFAULT_HOSTNAME_TS2
-        ts2_portno = DEFAULT_PORTNO_TS2
-    elif arg_length is 5:
-        ls_portno = int(argv[1])
-
-        ts1_hostname = argv[2]
-        ts1_portno = int(argv[3])
-        
-        ts2_hostname = argv[4]
-        ts2_portno = DEFAULT_PORTNO_TS2
-    elif arg_length is 6:
-        ls_portno = int(argv[1])
-
-        ts1_hostname = argv[2]
-        ts1_portno = int(argv[3])
-        
-        ts2_hostname = argv[4]
-        ts2_portno = argv[5]
-    else:
-        print(usage_str)
-        exit()
-
+    (ls_portno, ts1_info, ts2_info) = check_args(argv)
+    # ts1_info[0] is TS1's hostname
+    # ts1_info[1] is TS1's port number
+    # ts2_info[0] is TS2's hostname
+    # ts2_info[1] is TS2's port number
     print('')
     
-    start_ls(ls_portno, ts1_hostname, ts1_portno, ts2_hostname, ts2_portno)
+    start_ls(ls_portno, ts1_info, ts2_info)
 
     print('')
     return EX_OK
 
 if __name__ == '__main__':
-    """
-        Program execution begins here.
-    """
+    # Program execution begins here.
     retval = main(argv)

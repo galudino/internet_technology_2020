@@ -50,6 +50,10 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from os import path
+from enum import Enum
+from collections import namedtuple
+
 from utils import K
 from utils import logstat
 from utils import log
@@ -57,10 +61,6 @@ from utils import funcname
 from utils import logstr
 from utils import file_to_list
 from utils import str_to_list
-
-from os import path
-from enum import Enum
-from collections import namedtuple
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"

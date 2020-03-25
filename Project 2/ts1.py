@@ -52,6 +52,7 @@
 
 from os import EX_OK
 from sys import argv
+from socket import gethostbyaddr
 
 from utils import K
 from utils import logstat
@@ -59,6 +60,7 @@ from utils import log
 from utils import funcname
 from utils import logstr
 
+from network import BUFFER_SIZE
 from network import udp_socket_open
 from network import is_valid_hostname
 
@@ -66,11 +68,6 @@ from dns_module import DNS_table
 
 DEFAULT_INPUT_FILE_STR_TS1 = "PROJ2-DNSTS1.txt"
 DEFAULT_PORTNO_TS1 = 50007
-
-import socket
-import threading
-import time
-import random
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
@@ -81,56 +78,94 @@ __email1__ = "gem.aludino@rutgers.edu"
 __status__ = "Debug"
 
 def start_ts1(ts1_portno, table):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
     ts1_binding = ('', ts1_portno)
 
     ts1_sock = udp_socket_open()
     ts1_sock.bind(ts1_binding)
 
-    queried_hostname = ''
-
-    msg_log = ''
-
-    msg_in = ''
-    msg_out = ''
+    query = ''
 
     data_in = ''
     data_out = ''
 
+    msg_out = ''
+
+    msg_log = ''
+
     while True:
-        ## receive incoming data from LS
-        data_in, (ls_ipaddr, ls_portno) = ts1_sock.recvfrom(128)
+        # receive data from LS, decode for logging
+        data_in, (ls_ipaddr, ls_portno) = ts1_sock.recvfrom(BUFFER_SIZE)
         ls_binding = (ls_ipaddr, ls_portno)
+        query = data_in.decode('utf-8')
+    
+        # retrieve ls_hostname from ls_ipaddr
+        ls_hostname = gethostbyaddr(ls_ipaddr)[0]
 
-        ## retrieve ls_hostname from ls_ipaddr
-        ls_hostname = socket.gethostbyaddr(ls_ipaddr)[0]
-
-        ## decode incoming data
-        msg_in = data_in.decode('utf-8')
-        queried_hostname = msg_in
-
-        ## log incoming data
-        msg_log = logstr(ls_hostname, ls_ipaddr, queried_hostname)
+        msg_log = logstr(ls_hostname, ls_ipaddr, query)
         log(logstat.IN, funcname(), msg_log)
 
-        ## search table for queried_hostname
-        if table.has_hostname(queried_hostname):
-            ## if queried_hostname is resolved, reply to LS
+        # search table for query
+        if table.has_hostname(query):
+            # if query is resolved, reply to LS
             
-            ## prepare outgoing data to LS
-            msg_out = '{} {} {}'.format(queried_hostname, table.ipaddr(queried_hostname), table.flagtype(queried_hostname))
+            # prepare outgoing data to LS
+            msg_out = '{} {} {}'.format(query, table.ipaddr(query), table.flagtype(query))
 
-            ## log outgoing data to LS
+            # send outgoing data to LS
+            data_out = msg_out.encode('utf-8')
+            ts1_sock.sendto(data_out, ls_binding)
+
+            # log outgoing data to LS
             msg_log = logstr(ls_hostname, ls_ipaddr, msg_out)
             log(logstat.OUT, funcname(), msg_log)
-
-            ## send outgoing data to LS
-            ts1_sock.sendto(msg_out.encode('utf-8'), ls_binding)
         else:
-            ## if queried_hostname is not resolved, log to stdout
+            # if query is not resolved, notify user
             log(logstat.LOG, funcname(), 'No outgoing data will be sent for this query.')
 
         print('')
             
+def check_args(argv):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
+    arg_length = len(argv)
+
+    usage_str = '\nUSAGE:\npython {} [ts1_listen_port]\npython {} [ts1_listen_port] [input_file]\n'.format(argv[0], argv[0])
+
+    ts1_portno = DEFAULT_PORTNO_TS1
+
+    input_file_str = DEFAULT_INPUT_FILE_STR_TS1
+
+    # debugging args
+    if arg_length is 1:
+        pass
+    # end debugging args
+    elif arg_length is 2:
+        ts1_portno = int(argv[1])
+    elif arg_length is 3:
+        ts1_portno = int(argv[1])
+        input_file_str = argv[2]
+    else:
+        print(usage_str)
+        exit()
+
+    return (ts1_portno, input_file_str)
+
 def main(argv):
     """Main function, where client function is called
 
@@ -145,30 +180,7 @@ def main(argv):
         Raises:
             (none)
     """
-    arg_length = len(argv)
-
-    usage_str = '\nUSAGE:\npython {} [ts1_listen_port]\npython {} [ts1_listen_port] [input_file]\n'.format(argv[0], argv[0])
-
-    ts1_portno = DEFAULT_PORTNO_TS1
-
-    input_file_str = '__NONE__'
-    table = {}
-
-    ### debugging args
-    if arg_length is 1:
-        ts1_portno = DEFAULT_PORTNO_TS1
-        input_file_str = DEFAULT_INPUT_FILE_STR_TS1
-    ### end debugging args
-    elif arg_length is 2:
-        ts1_portno = int(argv[1])
-        input_file_str = DEFAULT_INPUT_FILE_STR_TS1
-    elif arg_length is 3:
-        ts1_portno = int(argv[1])
-        input_file_str = argv[2]
-    else:
-        print(usage_str)
-        exit()
-
+    (ts1_portno, input_file_str) = check_args(argv)
     print('')
     
     table = DNS_table()
@@ -179,7 +191,5 @@ def main(argv):
     return EX_OK
 
 if __name__ == '__main__':
-    """
-        Program execution begins here.
-    """
+    # Program execution begins here.
     retval = main(argv)

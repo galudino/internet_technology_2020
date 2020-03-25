@@ -222,6 +222,15 @@ def file_to_list(input_file_str):
     return output_list
 
 def str_to_list(input_str, delim):
+    """(TODO)
+
+        Args:
+            (TODO)
+        Returns:
+            (TODO)
+        Raises:
+            (TODO)
+    """
     output_list = []
     
     output_list = [word.strip() for word in input_str.split(delim)]
