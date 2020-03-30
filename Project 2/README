@@ -50,8 +50,81 @@
 """
 
 This project was written for Python 2.7, as per the PDF instructions.
-LS, TS1, and TS2 were tested on Rutgers iLabs --
+LS, TS1, and TS2 were tested on Rutgers iLabs.
+
 Client was run on macOS 10.15.4 Catalina.
+
+For my own testing,
+    TS1 runs on cp.cs.rutgers.edu, port 50007
+    TS2 runs on kill.cs.rutgers.edu, port 50009
+    LS runs on pwd.cs.rutgers.edu, port 8345
+        The hostnames/port numbers described for TS1/TS2
+        are used for LS in my test case
+
+I've built in the following command line args for my own use:
+(this may be helpful for grading as well)
+
+$ python ts1.py
+    is equivalent to the following:
+    $ python ts1.py 50007 PROJ2-DNSTS1.txt
+    (argv[3] can be used to define an input file of a different name)
+
+$ python ts2.py
+    is equivalent to the following:
+    $ python ts2.py 50009 PROJ2-DNSTS2.txt
+    (argv[3] can be used to define an input file of a different name)
+
+$ python ls.py
+    is equivalent to the following:
+    $ python ls.py 8345 cp.cs.rutgers.edu 50007 kill.cs.rutgers.edu 50009
+
+$ python client.py
+    is equivalent to the following:
+    $ python client.py pwd.cs.rutgers.edu 8345 PROJ2-HNS.txt RESOLVED.txt
+    (argv[3] and argv[4] can be used to define input/output files of different names)
+
+In case there are any problems with packages/environment,
+here are the imports that I used:
+
+client.py:
+    from os import EX_OK
+    from os import path
+    from sys import argv
+    from enum import Enum
+    from socket import timeout
+
+ls.py:
+    from os import EX_OK
+    from sys import argv
+    from socket import gethostbyaddr
+    from socket import gethostbyname
+    from select import select
+
+ts1.py/ts2.py:
+    from os import EX_OK
+    from sys import argv
+    from socket import gethostbyaddr
+
+utils.py:
+    from sys import _getframe
+    from os import path
+    from datetime import datetime
+    from enum import Enum
+
+dns_module.py:
+    from os import path
+    from enum import Enum
+    from collections import namedtuple
+
+network.py:
+    from socket import socket
+    from socket import AF_INET
+    from socket import SOCK_DGRAM
+    from socket import SOL_SOCKET
+    from socket import SO_REUSEADDR
+    from socket import gethostname
+    from socket import gethostbyname
+
 
 1. Please write down the full names and NetIDs of both your team members.
 -------------------------------------------------------------------------------
@@ -116,3 +189,13 @@ and that was what I went with.
 - A lot of the APIs in Python are transliterations of C APIs --
     I plan on using the select() function in my future C projects.
     (I hadn't known about it previously)
+
+- The importance of RTT.
+    For client, I gave it a timeout value of 10.0 secs.
+        I did this, because LS gives the TS1 and TS2 sockets a timeout value of 5.0 secs. 
+        
+        LS, at most, may take up to 5.0 secs before it sends a reply message to the client -- and if the client has a timeout value of 5.0 secs, it may assume a false timeout (even though it had actually received data.) 
+        
+        To play things safe, I decided that the client should have 2x the timeout value that LS gives to TS1 and TS2.
+            Since LS gives the TS sockets a timeout value of 5.0 secs,
+            The client socket (from client.py) will have a timeout value of 5.0 * 2 secs, or 10 secs.

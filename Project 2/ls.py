@@ -76,6 +76,8 @@ DEFAULT_PORTNO_LS = 8345
 DEFAULT_HOSTNAME_TS1 = "cp.cs.rutgers.edu"
 DEFAULT_HOSTNAME_TS2 = "kill.cs.rutgers.edu"
 
+DEFAULT_TS_TIMEOUT_VALUE = 5.0
+
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
 __date__ = "06 Apr 2020"
@@ -130,7 +132,7 @@ def start_ls(ls_portno, ts1_info, ts2_info):
 
     msg_log = ''
 
-    timeout_val = 5.0
+    timeout_val = DEFAULT_TS_TIMEOUT_VALUE
 
     while True:
         # receive data from client, decode for logging

@@ -72,6 +72,7 @@ from network import is_valid_hostname
 from dns_module import DNS_table
 
 from ls import DEFAULT_PORTNO_LS
+from ls import DEFAULT_TS_TIMEOUT_VALUE
 
 DEFAULT_INPUT_FILE_STR_HNS = 'PROJ2-HNS.txt'
 DEFAULT_OUTPUT_FILE_STR_RESOLVED = 'RESOLVED.txt'
@@ -102,7 +103,7 @@ def query_ls(ls_info, hostname_list):
     ls_ipaddr = is_valid_hostname(ls_hostname)
     ls_binding = (ls_hostname, ls_portno)
 
-    timeout_val = 10.0
+    timeout_val = DEFAULT_TS_TIMEOUT_VALUE * 2
 
     ls_sock = udp_socket_open()
     ls_sock.settimeout(timeout_val)
@@ -139,7 +140,6 @@ def query_ls(ls_info, hostname_list):
                 # RTT must be accounted for
                 msg_log = '[Connection timeout]'
                 log(logstat.LOG, funcname(), msg_log + '\n')
-                continue
 
             msg_in = data_in.decode('utf-8')
 
