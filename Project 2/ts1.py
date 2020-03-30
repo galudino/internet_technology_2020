@@ -186,8 +186,17 @@ def main(argv):
     table = DNS_table()
     table.append_from_file(input_file_str)
 
-    start_ts1(ts1_portno, table)
+    try:
+        msg = 'Starting TS2 server. Hit (Ctrl + c) to quit.\n'
+        log(logstat.LOG, funcname(), msg)
 
+        start_ts1(ts1_portno, table)
+    except KeyboardInterrupt, SystemExit:
+        print('')
+        msg = 'User terminated program before completion.\n'
+        log(logstat.LOG, funcname(), msg)
+
+    print('')
     return EX_OK
 
 if __name__ == '__main__':

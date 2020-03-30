@@ -52,8 +52,6 @@
 
 from os import EX_OK
 from sys import argv
-from sys import stdout
-from time import sleep
 from socket import gethostbyaddr
 from socket import gethostbyname
 from select import select
@@ -286,7 +284,15 @@ def main(argv):
     # ts2_info[1] is TS2's port number
     print('')
     
-    start_ls(ls_portno, ts1_info, ts2_info)
+    try:
+        msg = 'Starting LS server. Hit (Ctrl + c) to quit.\n'
+        log(logstat.LOG, funcname(), msg)
+
+        start_ls(ls_portno, ts1_info, ts2_info)
+    except KeyboardInterrupt, SystemExit:
+        print('')
+        msg = 'User terminated program before completion.\n'
+        log(logstat.LOG, funcname(), msg)
 
     print('')
     return EX_OK

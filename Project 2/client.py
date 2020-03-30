@@ -53,9 +53,7 @@
 from os import EX_OK
 from os import path
 from sys import argv
-from sys import stdout
 from enum import Enum
-from time import sleep
 from socket import timeout
 
 from utils import file_to_list
@@ -234,9 +232,19 @@ def main(argv):
     hostname_list = file_to_list(file_str[0])
 
     if len(hostname_list) > 0:
-        # if the hostname list has at least one element, proceed to LS server
-        resolved_list = query_ls(ls_info, hostname_list)
+        resolved_list = []
         
+        # if the hostname list has at least one element, proceed to LS server
+        try:
+            msg = 'Starting client routine. Hit (Ctrl + c) to quit.\n'
+            log(logstat.LOG, funcname(), msg)
+
+            resolved_list = query_ls(ls_info, hostname_list)
+        except KeyboardInterrupt, SystemExit:
+            print('')
+            msg = 'User terminated program before completion.\n'
+            log(logstat.LOG, funcname(), msg)
+
         if len(resolved_list) > 0:
             # if the resolved_list has at least one element, write to file
             write_to_file_from_list(file_str[1], resolved_list, 'w')
@@ -244,6 +252,7 @@ def main(argv):
         # if the hostname list is empty, notify the user
         log(logstat.ERR, funcname(), 'No data was read from \'{}{}{}\'.\n'.format(K.color.bold.WHT, file_str[0], K.NRM))
 
+    print('')
     return EX_OK
 
 if __name__ == '__main__':

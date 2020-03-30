@@ -49,23 +49,70 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+This project was written for Python 2.7, as per the PDF instructions.
+LS, TS1, and TS2 were tested on Rutgers iLabs --
+Client was run on macOS 10.15.4 Catalina.
+
 1. Please write down the full names and NetIDs of both your team members.
 -------------------------------------------------------------------------------
 Gemuele (Gem) Aludino       ga354
 
 2. Briefly discuss how you implemented the LS functionality of tracking which TS responded to the query and timing out if neither TS responded.
 -------------------------------------------------------------------------------
-(TODO)
+I began by opening 3 sockets:
+
+LS socket
+TS1 socket
+TS2 socket
+
+I check the provided hostnames of TS1 and TS2 to verify
+that they are legit hostnames -- if not, the program ends.
+
+TS1 and TS2 were set to be non-blocking.
+
+Using an infinite-while-loop,
+    LS receives a message from a client
+    The LS message is sent to:
+        TS1
+        then TS2
+    
+    I then call select:
+        resolved_sockets, _, _ = select([ts1_sock, ts2_sock], [], timeout_val)
+    
+    resolved_sockets will consist of ts1_sock, or ts2_sock, or neither --
+    whichever socket received data within the timeout_val.
+
+    If ts1_sock or ts2_sock received data,
+    the message received from the respective socket will be sent to client.
+    Otherwise, if neither TS socket received data,
+    a message will be prepared by LS stating that the client query was unresolved. The prepared message will then be sent to the client.
 
 3. Are there known issues or functions that aren't working currently in your attached code? If so, explain.
 -------------------------------------------------------------------------------
-(TODO)
+No issues found. Client, LS, and the TS code should run as intended.
 
 4. What problems did you face developing code for this project?
 -------------------------------------------------------------------------------
-(TODO)
+I need to determine the best way to implement LS, and specifically,
+how to determine which TS server, if any, responded to the original query.
+
+My first implementation consisted of the following:
+    I set a timeout value of 5 secs for TS1 and TS2.
+    Then, I did a try/except on a recv call for TS1.
+        If TS1 times out, we enter an except block:
+            I do a try/except on a recv call for TS2.
+                If TS2 times out, we enter an except block:
+                    a message is prepared by LS saying that the query was unresolved.
+                else, we get TS2's message and send it to the client.
+            else, we get TS1's message and send it to the client.
+
+The above implementation worked, but wasn't optimal.
+I then learned how to use select() (the implementation described above),
+and that was what I went with.
 
 5. What did you learn by working on this project?
 -------------------------------------------------------------------------------
-(TODO)
-
+- More Python
+- A lot of the APIs in Python are transliterations of C APIs --
+    I plan on using the select() function in my future C projects.
+    (I hadn't known about it previously)
