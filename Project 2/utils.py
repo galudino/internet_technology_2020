@@ -61,7 +61,7 @@ __date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 CHAIN_LINK = '-------------------------------------------------------------------------------'
 
@@ -112,7 +112,7 @@ class logstat(Enum):
     BUG = 'BUG'
 
 def log(stat, header, msg):
-    """Returns a [str], used for debugging/logging, formatted with a descriptor (based on a [logstat]), timestamp, header (usually a call to funcname()), and msg
+    """Returns a str, used for debugging/logging, formatted with a descriptor (based on a logstat), timestamp, header (usually a call to funcname()), and msg
         Args:
             stat: logstat
                 denotes the color/descriptor of the log message
@@ -121,7 +121,7 @@ def log(stat, header, msg):
             msg: str
                 body of logging message, can also be used with logstr() to create a more detailed header for the message body
         Returns:
-            A [str] consisting of the formatted log message
+            A str consisting of the formatted log message
         Raises:
             (none)
     """
@@ -151,11 +151,11 @@ def log(stat, header, msg):
     """
 
 def funcname():
-    """Returns a [str] of the calling function
+    """Returns a str of the calling function
         Args:
             (none)
         Returns:
-            string of the calling function
+            str of the calling function
         Raises:
             (none)
     """
@@ -222,14 +222,17 @@ def file_to_list(input_file_str):
     return output_list
 
 def str_to_list(input_str, delim):
-    """(TODO)
+    """Takes an input_str, which is a str, and returns a [str] of tokenized substrings via delim (a str).
 
         Args:
-            (TODO)
+            input_str: str
+                the string to tokenize into substrings
+            delim: str
+                the delimiter used to tokenize input_str
         Returns:
-            (TODO)
+            [list] of substrings derived from input_str via delim
         Raises:
-            (TODO)
+            (none)
     """
     output_list = []
     

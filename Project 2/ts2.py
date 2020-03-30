@@ -52,6 +52,7 @@
 
 from os import EX_OK
 from sys import argv
+from socket import gethostname
 from socket import gethostbyaddr
 
 from utils import K
@@ -75,21 +76,25 @@ __date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def start_ts2(ts2_portno, table):
-    """(TODO)
+    """Starts the TS2 server routine by opening a socket so that it can receive queries from LS. The query is used to run a look-up for a hostname mapping within table, and a reply is sent if the query is resolved.
 
         Args:
-            (TODO)
+            ts2_portno: int
+                desired port number for TS2 server
+            table: DNS_table
+                table containing (hostname : addrflag) mappings
         Returns:
-            (TODO)
+            (none)
         Raises:
-            (TODO)
+            (none)
     """
     ts2_binding = ('', ts2_portno)
 
     ts2_sock = udp_socket_open()
+    ts2_hostname = gethostname()
     ts2_sock.bind(ts2_binding)
 
     query = ''
@@ -118,7 +123,13 @@ def start_ts2(ts2_portno, table):
             # if query is resolved, reply to LS
             
             # prepare outgoing data to LS
+            """
+            # original specificaton, as per PDF
             msg_out = '{} {} {}'.format(query, table.ipaddr(query), table.flagtype(query))
+            """
+
+            # new specification, as mentioned by professor
+            msg_out = '{} {} {} {}'.format(query, table.ipaddr(query), table.flagtype(query), ts2_hostname)
 
             # send outgoing data to LS
             data_out = msg_out.encode('utf-8')
@@ -134,14 +145,16 @@ def start_ts2(ts2_portno, table):
         print('')
             
 def check_args(argv):
-    """(TODO)
+    """Examines the elements of argv to determine if the proper command line arguments were provided
 
         Args:
-            (TODO)
+            argv: [str]
+                Command line arguments
         Returns:
-            (TODO)
+            a tuple consisting of
+                (ts2_portno, input_file_str)
         Raises:
-            (TODO)
+            (none)
     """
     arg_length = len(argv)
 
@@ -178,7 +191,10 @@ def main(argv):
         Returns:
             Exit status, by default, 0 upon exit
         Raises:
-            (none)
+            KeyboardInterrupt
+                if user terminates program with (Ctrl + c) before completion
+            SystemExit
+                causes program to exit upon KeyboardInterrupt
     """
     (ts2_portno, input_file_str) = check_args(argv)
     print('')

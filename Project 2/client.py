@@ -85,17 +85,20 @@ __date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def query_ls(ls_info, hostname_list):
-    """(TODO)
+    """Starts the client routine by opening a socket so that it can communicate with the LS server, and send it the contents of hostname_list. Client will then receive replies from LS; each reply will be appended to a resolved_list and returned from this function.
 
         Args:
-            (TODO)
+            ls_info: tuple
+                consists of ls_hostname (LS hostname) and ls_portno (LS port number)
+            hostname_list: list
+                consists of hostnames (each a [str]) to query, which LS server will receive from client
         Returns:
-            (TODO)
+            a [str] of replies from LS
         Raises:
-            (TODO)
+            socket.timeout if no data is received from LS by timeout_val seconds.
     """
     ls_hostname = ls_info[0]
     ls_portno = ls_info[1]
@@ -157,12 +160,16 @@ def query_ls(ls_info, hostname_list):
     return resolved_list
 
 def check_args(argv):
-    """(TODO)
+    """Examines the elements of argv to determine if the proper command line arguments were provided
 
         Args:
-            (TODO)
+            argv: [str]
+                Command line arguments
         Returns:
-            (TODO)
+            a tuple consisting of
+                ((ls_hostname, ls_portno), (input_file_str, output_file_str))
+                or simply:
+                (ls_info, file_io_info)
         Raises:
             (TODO)
     """
@@ -218,7 +225,10 @@ def main(argv):
         Returns:
             Exit status, by default, 0 upon exit
         Raises:
-            (none)
+            KeyboardInterrupt
+                if user terminates program with (Ctrl + c) before completion
+            SystemExit
+                causes program to exit upon KeyboardInterrupt
     """
     (ls_info, file_str) = check_args(argv)
     # ls_info[0] is LS's hostname

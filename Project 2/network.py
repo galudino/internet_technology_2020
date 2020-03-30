@@ -69,21 +69,21 @@ BUFFER_SIZE = 256
 
 __author__ = "Gemuele (Gem) Aludino"
 __copyright__ = "Copyright (c) 2020, Gemuele Aludino"
-__date__ = "04 Mar 2020"
+__date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def udp_socket_open():
-    """(TODO)
+    """Opens a UDP (datagram) socket, with a call to setsockopt (so the hostname can be immediately reused after a disconnect)
 
         Args:
-            (TODO)
+            (none)
         Returns:
-            (TODO)
+            An open UDP (datagram) socket
         Raises:
-            (TODO)
+            EnvironmentError if socket fails to open
     """
     sock = 0
     msg = ''
@@ -113,14 +113,16 @@ def udp_socket_open():
     return sock
 
 def is_valid_hostname(hostname):
-    """(TODO)
+    """Uses gethostbyname to determine if hostname valid, or not
 
         Args:
-            (TODO)
+            hostname: str
+                desired hostname to verify
         Returns:
-            (TODO)
+            str representing the IP address of the validated hostname;
+            if hostname is invalid, returns None
         Raises:
-            (TODO)
+            EnvironmentError if hostname is invalid (gethostbyname fails)
     """
     try:
         ipaddr = gethostbyname(hostname)

@@ -84,17 +84,22 @@ __date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 def start_ls(ls_portno, ts1_info, ts2_info):
-    """(TODO)
+    """Starts the LS server routine by opening a socket so that it can receive client queries -- also opens a socket for the TS1 and TS2 servers respectively so that it can forward the client queries to the TS servers, and await any potential replies from them. Routine runs indefintely unless connection is severed or client quits with KeyboardInterrupt.
 
         Args:
-            (TODO)
+            ls_portno: int
+                desired port number for LS server
+            ts1_info: tuple
+                consists of (ts1_hostname, ts1_portno)
+            ts2_info: tuple
+                consists of (ts2_hostname, ts2_portno)
         Returns:
-            (TODO)
+            (none)
         Raises:
-            (TODO)
+            (none)
     """
     ts1_hostname = ts1_info[0]
     ts1_portno = ts1_info[1]
@@ -206,14 +211,18 @@ def start_ls(ls_portno, ts1_info, ts2_info):
         print('')   
 
 def check_args(argv):
-    """(TODO)
+    """Examines the elements of argv to determine if the proper command line arguments were provided
 
         Args:
-            (TODO)
+            argv: [str]
+                Command line arguments
         Returns:
-            (TODO)
+            a tuple consisting of
+                (ls_portno, (ts1_hostname, ts1_portno), (ts2_hostname, ts2_portno))
+                or simply:
+                (ls_portno, ts1_info, ts2_info)
         Raises:
-            (TODO)
+            (none)
     """
     arg_length = len(argv)
 
@@ -263,7 +272,7 @@ def check_args(argv):
     return (ls_portno, (ts1_hostname, ts1_portno), (ts2_hostname, ts2_portno))
     
 def main(argv):
-    """Main function
+    """Main function, where LS function is called
 
         Args:
             Command line arguments (as per sys.argv)
@@ -277,6 +286,13 @@ def main(argv):
                     hostname for desired TS2 server
                 argv[5] - ts2_listen_port
                     port number for desired TS2 server, corresponds to ts2_hostname
+        Returns:
+            Exit status, by default, 0 upon exit
+        Raises:
+            KeyboardInterrupt
+                if user terminates program with (Ctrl + c) before completion
+            SystemExit
+                causes program to exit upon KeyboardInterrupt
     """
 
     (ls_portno, ts1_info, ts2_info) = check_args(argv)

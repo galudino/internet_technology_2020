@@ -68,19 +68,22 @@ __date__ = "06 Apr 2020"
 __license__ = "MIT"
 __email0__ = "g.aludino@gmail.com"
 __email1__ = "gem.aludino@rutgers.edu"
-__status__ = "Debug"
+__status__ = "Release"
 
 HOST_NOT_FOUND_STR = 'Error:HOST NOT FOUND'
 
 class DNS_table:
+    """ADT that wraps a dictionary representing mappings of hostnames to namedtuples called addrflag."""
     __table = {}
     __ts_hostname = ''
 
     class flag(Enum):
-        HOST_NOT_FOUND = 'Error:HOST NOT FOUND'
+        """Subclass of Enum that represents 3 distinct states - HOST_NOT_FOUND, A, or NS -- these are of type [str]."""
+        HOST_NOT_FOUND = HOST_NOT_FOUND_STR
         A = 'A'
         NS = 'NS'
     
+    """addrflag is the value that a hostname maps to within DNS_table."""
     addrflag = namedtuple('addrflag', ['ipaddr', 'flagtype'])
 
     def __init__(self):
