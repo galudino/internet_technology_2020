@@ -123,13 +123,14 @@ def start_ts1(ts1_portno, table):
             # if query is resolved, reply to LS
             
             # prepare outgoing data to LS
-            """
+        
             # original specificaton, as per PDF
             msg_out = '{} {} {}'.format(query, table.ipaddr(query), table.flagtype(query))
+            
             """
-
             # new specification, as mentioned by professor
             msg_out = '{} {} {} {}'.format(query, table.ipaddr(query), table.flagtype(query), ts1_hostname)
+            """
 
             # send outgoing data to LS
             data_out = msg_out.encode('utf-8')
