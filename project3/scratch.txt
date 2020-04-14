@@ -1,0 +1,36 @@
+TODO
+-install mininet VM, run it off of VirtualBox
+-get familiar with AS352.py
+
+-read, research, test
+
+-Set up ip addrs for all interfaces
+    -using ip addr command
+    -8 interface addresses total
+
+-Set up default routes for the hosts
+    -using ip route command
+    -will set up 4 default routes, one for each endpoint
+
+-Set up the routes on the router
+    -using ip route command
+    -will set up 4 routes, one for each destination endpoint
+    -   (Destination IP Address) -> (Port)
+        h1 (10.0.0.2) -> r1-eth1
+        h2 (192.168.0.2) -> r1-eth2
+        h3 (10.0.0.4) -> r1-eth3
+        h4 (192.168.0.04) -> r1-eth4
+
+-Test network
+    -using ping and traceroute commands
+    -example: ping h4 to h1 to check reachability
+    -use sudo apt-get update; sudo apt-get install traceroute
+    if error
+
+-Do commands.txt - this is where your work will be!
+    -will consist of bash shell commands, and mininet commands
+    -will only use ping and traceroute to test connectivity
+    -mininet should not crash when running commands.txt
+
+-Do README
+

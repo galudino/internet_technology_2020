@@ -1,0 +1,78 @@
+"""README
+    Project 3: Can you set up your own IP network? (README)
+
+    Rutgers University
+        School of Arts and Sciences
+            (01:198:352) Internet Technology
+            Professor Nath Badri
+            Section 02
+
+    Assignment synopsis:
+        In this project, you will set up a small IP network consisting of hosts
+        and a router.
+
+        YOur network will function with full end-to-end connectivity,
+        and you will experiment with tools like ping and traceroute.
+
+        Consider the following network topology:
+            
+            h1    h2
+              \  /
+               R1
+              /  \
+            h3    h4
+
+        Here, R1 is an IP router and h1, h2, h3, and h4 are endpoints.
+        In a safe, experimental setting running inside of a virtual machine,
+        you will use the ip suite of commands to set up the correct IP
+        addresses for all of the interfaces, and the correct routing table
+        entries for all of the routers and endpoints in this network.
+
+        Welcome to the AS352 network!
+
+    Copyright © 2020 Gemuele Aludino
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files
+    (the "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BY NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+    BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
+    THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""
+
+TODO introduction
+
+0. Please write down the full names and NetIDs of both your team members.
+-------------------------------------------------------------------------------
+Gemuele (Gem) Aludino       ga354
+
+1. Briefly discuss how you implemented each functionality:
+setting up interfaces, setting up default routes,
+and setting up per-destination routes.
+-------------------------------------------------------------------------------
+TODO description
+
+2. Are there known issues or functions that aren't working currently in your attached code? If so, explain.
+-------------------------------------------------------------------------------
+TODO description
+
+3. What problems did you face developing code for this project?
+-------------------------------------------------------------------------------
+TODO description
+
+4. What did you learn by working on this project?
+-------------------------------------------------------------------------------
+TODO description
+
