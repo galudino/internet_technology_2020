@@ -11,7 +11,7 @@
         In this project, you will set up a small IP network consisting of hosts
         and a router.
 
-        YOur network will function with full end-to-end connectivity,
+        Your network will function with full end-to-end connectivity,
         and you will experiment with tools like ping and traceroute.
 
         Consider the following network topology:
@@ -52,8 +52,6 @@
     THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-TODO introduction
-
 0. Please write down the full names and NetIDs of both your team members.
 -------------------------------------------------------------------------------
 Gemuele (Gem) Aludino       ga354
@@ -62,17 +60,164 @@ Gemuele (Gem) Aludino       ga354
 setting up interfaces, setting up default routes,
 and setting up per-destination routes.
 -------------------------------------------------------------------------------
-TODO description
+Using the IP addresses and interface names given for the assignment,
+I started by drawing a picture of the topology (with the IP addresses/interface names).
+It looked like this:
+        
+            ---------------      ------------------
+           | h1            |    | h2               |
+           | 10.0.0.2-eth0 |    | 192.168.0.2-eth0 |
+            ---------------      -----------------
+                  \\                    //
+                   \\                  //
+             ---------------    ------------------
+            | 10.0.0.1-eth1 |  | 192.168.0.1-eth2 |
+             ---------------    ------------------
+                            \  /
+                             r1
+                            /  \
+             ---------------    ------------------
+            | 10.0.0.3-eth3 |  | 192.168.0.3-eth4 |
+             ---------------    ------------------
+                    //                 \\
+                   //                   \\
+            ---------------      ------------------
+           | h3            |    | h4               |
+           | 10.0.0.4-eth0 |    | 192.168.0.4-eth0 |
+            ---------------      ------------------
+
+Seeing it visually made the overall objective much easier.
+
+I then needed to review how to use mininet 
+and its commands -- specifically, ip addr add, and ip addr route.
+
+Using the provided IP addresses/interface names,
+I wrote commands to do each of the following:
+(4 commands are created from each '-' bulletpoint/description)
+
+(1) Set up the IP addresses of all interfaces
+    - add an IP address for each endpoint (h1, h2, h3, h4)
+      and associate it with eth0, the desired interface --
+      eth0 will be the designated interface for default routes
+
+        mininet> [endpoint] ip addr add [ip address] dev [endpoint-interface]
+
+    - add an IP address for each interface
+      (r1-eth1, r1-eth2, r1-eth3, r1-eth4)
+      within the router (r1)
+      
+        mininet> [router] ip addr add [ip address] dev [router-interface]
+    
+(2) Set up the default routes for the hosts
+    - assign eth0 as the default interface 
+      for each endpoint (h1, h2, h3, h4)
+
+        mininet> [endpoint] ip route add default dev [endpoint-interface]
+
+(3) Set up the routes on the router
+    - set up the routes for router (r1) (this is where the picture helped out!)
+        
+        mininet> [router] ip route add [ip address/32] dev [router-interface]
+
+After writing all 16 commands in commands.txt,
+I ran
+
+    mininet> source commands.txt
+
+I dumped the routing table using
+
+    mininet> r1 route
+
+and got this:
+    
+Kernel IP routing table
+Destination     Gateway     Genmask         Flags   Metric  Ref    Use  Iface
+10.0.0.2        *           255.255.255.255 UH      0       0        0  r1-eth1
+10.0.0.4        *           255.255.255.255 UH      0       0        0  r1-eth3
+192.168.0.2     *           255.255.255.255 UH      0       0        0  r1-eth2
+192.168.0.4     *           255.255.255.255 UH      0       0        0  r1-eth4
+
+I also did
+    
+    mininet> r1 ip route
+
+and got this:
+
+    10.0.0.2 dev r1-eth1  scope link
+    10.0.0.4 dev r1-eth3  scope link
+    192.168.0.2 dev r1-eth4  scope link
+    192.168.0.4 dev r1-eth4  scope link
+
+All seems good.
+
+I conducted pings and traceroutes from host to host --
+    h1 to h2
+    h1 to h3
+    h1 to h4
+
+    h2 to h1
+    h2 to h3
+    h2 to h4
+    
+    h3 to h1
+    h3 to h2
+    h3 to h4
+    
+    h4 to h1
+    h4 to h2
+    h4 to h3
+
+Everything checked out just fine.
+
+Finally, I sniffed the r1-eth2 interface on r1 using tcpdump,
+and the resulting dump also checked out.
+
+I made my own "undo.txt" file that reverses all of the commands
+in "commands.txt" so that I do not have to exit mininet to have
+a "fresh slate" to work with.
+
+(It's really just all of the commands in commands.txt, written
+ in reverse order, with 'del' in place of 'add').
 
 2. Are there known issues or functions that aren't working currently in your attached code? If so, explain.
 -------------------------------------------------------------------------------
-TODO description
+Everything appears to work as intended.
 
 3. What problems did you face developing code for this project?
 -------------------------------------------------------------------------------
-TODO description
+- Needed to learn what mininet was, how it worked, and what I needed to know
+  for the project (specifically, the commands)
+
+- Needed to remember to prefix commands with the host or router name
+  
+The problems I faced were relatively trivial.
 
 4. What did you learn by working on this project?
 -------------------------------------------------------------------------------
-TODO description
+I learned how to set up an IP network!
+
+Network topology and routing was a sketchy topic for me,
+but I always learn concepts best when working on a project
+related to the topic at hand. 
+
+For whatever reason,
+there are times when I struggle with theory -- but when that theory
+is put into practice (writing software), things make a lot more
+sense for me. I'm a horrible test taker, but I am hoping that my
+lab assignments will make up for my poor scores...
+
+Luckily, in terms of a CLI Unix-like environment, I am very comfortable.
+I have been a macOS user for over a decade, and am used to working in the Terminal.
+I also happen to use Ubuntu as my Linux distribution of choice, so navigating through
+this project was very easy for me. 
+
+I would imagine someone who was not as comfortable
+using VMs, Linux CLI, or even using a text editor like VIM 
+would have an additional learning curve for this project.
+
+Now that I know how to use mininet,
+I may install it on my native Ubuntu installation.
+I would imagine that in practice, 
+running mininet via bare metal (natively) would be more ideal,
+but that's just a guess.
 

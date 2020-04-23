@@ -1,0 +1,17 @@
+r1 printf "\n%s\n" "*** Traceroute ***"
+h1 traceroute 192.168.0.2; echo ""
+h1 traceroute 10.0.0.4; echo ""
+h1 traceroute 192.168.0.4; echo ""
+
+h2 traceroute 10.0.0.2; echo ""
+h2 traceroute 10.0.0.4; echo ""
+h2 traceroute 192.168.0.4; echo ""
+
+h3 traceroute 10.0.0.2; echo ""
+h3 traceroute 192.168.0.2; echo ""
+h3 traceroute 192.168.0.4; echo ""
+
+h4 traceroute 10.0.0.2; echo ""
+h4 traceroute 192.168.0.2; echo ""
+h4 traceroute 10.0.0.4; echo ""
+

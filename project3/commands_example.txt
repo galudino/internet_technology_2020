@@ -1,4 +1,0 @@
-h1 ls
-net
-r1 ip route
-

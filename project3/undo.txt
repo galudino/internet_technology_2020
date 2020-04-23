@@ -1,0 +1,105 @@
+r1 ### 
+r1  #   undo.txt
+r1  #   Project 3: Can you set up your own IP network? (reverses commands.txt)
+r1  #
+r1  #   Rutgers University
+r1  #       School of Arts and Sciences
+r1  #           (01:198:352) Internet Technology
+r1  #           Professor Nath Badri
+r1  #           Section 02
+r1  #   
+r1  #   Assignment synopsis:
+r1  #       In this project, you will set up a small IP network consisting of
+r1  #       hosts and a router.
+r1  #       
+r1  #       Your network will function with full end-to-end connectivity,
+r1  #       and you will experiment with tools like ping and traceroute.
+r1  #   
+r1  #       Consider the following network topology:
+r1  #   
+r1  #            h1    h2
+r1  #              \  /
+r1  #               R1
+r1  #              /  \
+r1  #            h3    h4
+r1  #
+r1  #       Here, R1 is an IP router and h1, h2, h3, and h4 are endpoints.
+r1  #       In a safe, experimental setting running inside of a virtual machine,
+r1  #       you will use the ip suite of commands to set up the correct IP
+r1  #       addresses for all of the interaces, and the correct routing table
+r1  #       entries for all of the routers and endpoints in this network.
+r1  #
+r1  #       Welcome to the AS352 network!
+r1  #
+r1  #   NOTE:
+r1  #       This file, commands.txt is intended to run in a mininet instance,
+r1  #       with the source command:
+r1  #           mininet> source commands.txt
+r1  #           
+r1  #       Standard shell commands (including comments) 
+r1  #       can be run using a prefix to the desired command -- 
+r1  #       the prefix can be the router name (r1),
+r1  #       or any of the host names (h1, h2, h3, or h4).
+r1  #
+r1  #   Copyright (c) 2020 Gemuele Aludino
+r1  #
+r1  #   Permission is hereby granted, free of charge, to any person obtaining a
+r1  #   copy of this software and associated documentation files
+r1  #   (the "Software"), to deal in the Software without restriction,
+r1  #   including without limitation the rights to use, copy, modify, merge,
+r1  #   publish, distribute, sublicense, and/or sell copies of the Software,
+r1  #   and to permit persons to whom the Software is furnished to do so,
+r1  #   subject to the following conditions:
+r1  #
+r1  #   The above copyright notice and this permission notice shall be included
+r1  #   in all copies or substantial portions of the Software.
+r1  #
+r1  #   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+r1  #   OR IMPLIED, INCLUDING BY NOT LIMITED TO THE WARRANTIES OF
+r1  #   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+r1  #   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+r1  #   CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+r1  #   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+r1  #   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+r1  ##
+
+r1 CHAIN="---------------------------------" 
+
+r1 printf "\n%s\n" "*** Network uninstaller"
+
+r1 printf "\n%s\n" "Removing assigned routes from the router..."
+
+r1 ip route del 192.168.0.4/32 dev r1-eth4
+r1 ip route del 10.0.0.4/32 dev r1-eth3
+r1 ip route del 192.168.0.2/32 dev r1-eth2
+r1 ip route del 10.0.0.2/32 dev r1-eth1
+
+r1 echo "Done."
+
+r1 printf "\n%s\n" "Removing default routes from all hosts..."
+
+h4 ip route del default dev h4-eth0
+h3 ip route del default dev h3-eth0
+h2 ip route del default dev h2-eth0
+h1 ip route del default dev h1-eth0
+
+r1 echo "Done."
+
+r1 printf "\n%s\n" "Removing IP addresses from all interfaces..."
+
+r1 ip addr del 192.168.0.3/32 dev r1-eth4
+r1 ip addr del 10.0.0.3/32 dev r1-eth3
+r1 ip addr del 192.168.0.1/32 dev r1-eth2
+r1 ip addr del 10.0.0.1/32 dev r1-eth1
+h4 ip addr del 192.168.0.4/32 dev h4-eth0
+h3 ip addr del 10.0.0.4/32 dev h3-eth0
+h2 ip addr del 192.168.0.2/32 dev h2-eth0
+h1 ip addr del 10.0.0.2/32 dev h1-eth0
+
+r1 echo "Done."
+
+r1 printf "\n%s\n" "*** Routing Table on Router:"
+r1 route
+
+r1 printf "\n%s\n%s\n%s\n" $CHAIN "Uninstaller application finished." $CHAIN
+
